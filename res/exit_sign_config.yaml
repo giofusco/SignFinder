@@ -1,8 +1,10 @@
 %YAML:1.0
 
+# ATTENTION: DO NOT USE TAB CHARACTERS WHEN EDITING THIS FILE (you can replace tabs with spaces in you editor settings)
+
 # Classifiers location
-CascadeFile: "C:/dev/workspace/WICAB_SingFinding/opencv-haar-classifier-training-master/classifier_lbp/cascade.xml"     # full path to cascade classifier CascadeFile
-SVMFile: "C:/dev/workspace/WICAB_SingFinding/x64/Release/exitModel.svm"                                                 # full path to SVM model 
+CascadeFile: "res/cascade.xml"     # full path to cascade classifier CascadeFile
+SVMFile: "res/exitModel.svm"       # full path to SVM model 
 
 # Cascade search window parameters. It can be changed, but it is a good idea to keep the same aspect ratio (w/h = 1.5)
 minWinSize:
