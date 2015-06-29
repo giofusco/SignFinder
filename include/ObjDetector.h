@@ -23,7 +23,7 @@ public:
 		throw (std::runtime_error) /// initializes the parameters using the file in input. 
 		{ params_.loadFromFile(yamlConfigFile); }; 
 	
-	cv::Mat currFrame; ///< last frame processed
+	cv::Mat currFrame; ///< last processed frame
 
 private:
 	void init();	///< initializes the classifiers
