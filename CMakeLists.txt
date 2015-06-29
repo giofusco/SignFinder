@@ -13,25 +13,20 @@ if (OpenCV_FOUND)
 endif()
 
 #Find LibSVM
-find_package(LIBSVM REQUIRED)
-if (LIBSVM_FOUND)
-  message(STATUS "LibSVM Found")
-  message(STATUS "LibSVM_LIBRARIES = ${LIBSVM_LIBRARIES}")
-  message(STATUS "LibSVM_INCLUDE_DIRS = ${LIBSVM_INCLUDE_DIRS}")
-  include_directories(${LIBSVM_INCLUDE_DIRS})
-endif()
+set(LIBSVM_INCLUDE_DIR "" CACHE FILEPATH "Path to libsvm includes")
 
 set( NAME_SRC
     src/main.cpp   
     src/DetectionParams.cpp
     src/ObjDetector.cpp
+	${LIBSVM_INCLUDE_DIR}/svm.cpp
 )
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/include)
+INCLUDE_DIRECTORIES(${LIBSVM_INCLUDE_DIR}  ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 add_executable( ${PROJECT_NAME} ${NAME_SRC} ${NAME_HEADERS} )
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 
 
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} opencv_core opencv_imgproc opencv_video opencv_objdetect opencv_highgui opencv_gpu opencv_ml ${LIBSVM_LIBRARIES} ${EXTERNAL_LIBS})
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} opencv_core opencv_imgproc opencv_video opencv_objdetect opencv_highgui opencv_gpu opencv_ml ${EXTERNAL_LIBS})
