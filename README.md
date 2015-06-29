@@ -11,10 +11,8 @@ This README would normally document whatever steps are necessary to get your app
 ### How do I get set up? ###
 
 * Dependencies
-- Opencv 2.4.11
-- LibSVM 3.20
+Opencv 2.4.11
+LibSVM 3.20
 
 * Running the detector
  - signFinder config_file.yaml video_file
-
- 
