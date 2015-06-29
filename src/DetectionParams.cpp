@@ -15,7 +15,7 @@ DetectionParams::DetectionParams()
 * @param[in] yamlConfigFile the full path to the configuration file to parse
 * \exception std::runtime_error error accessing or parsing the configuration file
 */
-DetectionParams::DetectionParams(std::string yamlConfigFile) throw(std::exception){
+DetectionParams::DetectionParams(std::string yamlConfigFile) throw(std::runtime_error){
 
 	DetectionParams();
 	loadFromFile(yamlConfigFile);
@@ -34,7 +34,7 @@ DetectionParams::~DetectionParams()
 * Initialize the parameters using a configuration file
 * @param[in] yamlConfigFile the full path to the configuration file to parse
 */
-void DetectionParams::loadFromFile(std::string yamlConfigFile){
+void DetectionParams::loadFromFile(std::string yamlConfigFile) throw(std::runtime_error){
 
 	cv::FileNode n;
 	cv::FileNodeIterator it;
