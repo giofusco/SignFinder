@@ -2,7 +2,7 @@
 #define DETECTION_PARAMS_H
 #include <exception>
 #include <iostream>
-#include <opencv2\opencv.hpp>
+#include <opencv2/opencv.hpp>
 
 
 /** \class DetectionParams

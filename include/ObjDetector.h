@@ -15,8 +15,8 @@
 class ObjDetector
 {
 public:
-	ObjDetector();	///< basic constructor. The parameters are not initialized.
-	ObjDetector(std::string yamlConfigFile);	///< constructor. The parameters are inizialized using the file passed in input.
+    ObjDetector();	///< basic constructor. The parameters are not initialized.
+	ObjDetector(std::string yamlConfigFile) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
 	~ObjDetector();
 	std::vector<cv::Rect> detect(cv::Mat& frame);	///< performs object detection on the frame in input. 
 	inline void init(std::string yamlConfigFile) 
@@ -26,7 +26,7 @@ public:
 	cv::Mat currFrame; ///< last frame processed
 
 private:
-	void init();	///< initializes the classifiers
+	void init() throw (std::runtime_error);	///< initializes the classifiers
 	std::vector<cv::Rect> verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois); ///< Filters candidate ROIs using SVM
 
 	DetectionParams params_;			///< parameters of the detector
