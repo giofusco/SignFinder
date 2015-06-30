@@ -1,24 +1,23 @@
-//// main.cpp : Defines the entry point for the console application.
+/*
+
+Copyright 2015 The Smith-Kettlewell Eye Research Institute
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+   limitations under the License.
+
+*/
 
 
 /*! \mainpage WICAB - SignFinder
-*
-* \section intro_sec Introduction
-*
-* This is the introduction.
-*
-* \section install_sec Installation
-*
-* \subsection step1 Step 1: OpenCV
-* Install and compile [OpenCV 2.4.11 (download here)]( http://opencv.org/downloads.html). <br>
-* [Installation instruction here] (http://docs.opencv.org/doc/tutorials/introduction/table_of_content_introduction/table_of_content_introduction.html). <br>
-* After the installation, make sure that the directory containing the binary libraries is included in the system path. <br>
-*
-** Warning: This software has been tested using [OpenCV 2.4.11]( http://opencv.org/downloads.html). Using other versions may result in incompatibilities or it may affect performance.
-
-* etc...
 */
-
 
 
 #include "ObjDetector.h"
