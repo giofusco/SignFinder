@@ -16,9 +16,6 @@ See the License for the specific language governing permissions and
 */
 
 
-/*! \mainpage WICAB - SignFinder
-*/
-
 
 #include "ObjDetector.h"
 #include <exception>
