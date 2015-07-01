@@ -27,21 +27,33 @@ int main(int argc, char* argv[]){
 	else{
 
 		try{
-			ObjDetector detector = ObjDetector(argv[1]);
-			std::string videoname = std::string(argv[2]);
+			ObjDetector detector(argv[1]);
+			std::string videoname(argv[2]);
 			cv::VideoCapture vc;
+            
 			if (vc.open(videoname)){
 				cv::Mat frame;
-				std::vector<cv::Rect> rois;
 				int keypress;
-				std::vector<cv::Rect>::iterator it;
+                int frameno = 0;
 				while (vc.read(frame)){
-					rois = detector.detect(frame);
+                    ++frameno;
+					auto result = detector.detect(frame);
 					
 					//plotting ROIs
-					for (it = rois.begin(); it != rois.end(); ++it)
-						rectangle(detector.currFrame, *it, cv::Scalar(0, 0, 255), 2);
+                    for (const auto& res: result)
+                    {
+						rectangle(detector.currFrame, res.roi, cv::Scalar(0, 0, 255), 2);
+                        //write confidence and size
+                        putText(detector.currFrame, "p=" + std::to_string(res.confidence), res.roi.br(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
+                        putText(detector.currFrame, std::to_string(res.roi.width) + "x" + std::to_string(res.roi.height), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
+                    }
 					cv::imshow("Detection", detector.currFrame);
+                    if ( !result.empty() )
+                    {
+                        std::string filename = "frame_" + std::to_string(frameno) + ".jpg";
+                        std::cerr << "Detected " << result.size() << " signs. Saving " << filename << std::endl;
+                        cv::imwrite(filename, detector.currFrame);
+                    }
 
 					keypress = cv::waitKey(1);
 

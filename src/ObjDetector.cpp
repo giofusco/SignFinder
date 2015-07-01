@@ -17,7 +17,19 @@ See the License for the specific language governing permissions and
 
 #include "ObjDetector.h"
 
-
+namespace
+{
+    int roundMe(double val)
+    {
+        return (val - std::floor(val) >= std::ceil(val) - val ? std::ceil(val) : std::floor(val));
+    }
+    
+    enum Labels
+    {
+        FOREGROUND = 1,
+        BACKGROUND = -1
+    };
+}
 ObjDetector::ObjDetector()
 {
 	params_ = DetectionParams();
@@ -61,8 +73,9 @@ void ObjDetector::init()throw(std::runtime_error){
 * @param[in] frame
 * \return a vector of detection ROIs 
 */
-std::vector<cv::Rect> ObjDetector::detect(cv::Mat& frame){
+std::vector<ObjDetector::Result> ObjDetector::detect(cv::Mat& frame){
 
+    std::vector<ObjDetector::Result> result;
 	if (params_.isInit()){
 		if (params_.scalingFactor != 1 && params_.scalingFactor > 0)
 			resize(frame, frame, cv::Size(frame.size().width * params_.scalingFactor, frame.size().height* params_.scalingFactor));
@@ -70,24 +83,24 @@ std::vector<cv::Rect> ObjDetector::detect(cv::Mat& frame){
 		if (params_.flip)
 			flip(frame, frame, 0);
 
-		if (params_.transpose){
+        if (params_.transpose)          //possible bug?
 			frame = frame.t();
-			frame.copyTo(currFrame);
-			//cropping
-			cv::Mat cropped;
-			frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().width*params_.croppingFactors[1])).copyTo(cropped);
+        
+        frame.copyTo(currFrame);
+        //cropping
+        cv::Mat cropped;
+        frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().width*params_.croppingFactors[1])).copyTo(cropped);
 
-			if (params_.showIntermediate)
-				cv::imshow("Cropped Input", cropped);
+        if (params_.showIntermediate)
+            cv::imshow("Cropped Input", cropped);
 
-			std::vector<cv::Rect> rois, filteredRois;
-			cascade_.detectMultiScale(cropped, rois, params_.cascadeScaleFactor, 0, 0, params_.cascadeMinWin, params_.cascadeMaxWin);
-			groupRectangles(rois, 1);
+        std::vector<cv::Rect> rois, filteredRois;
+        cascade_.detectMultiScale(cropped, rois, params_.cascadeScaleFactor, 0, 0, params_.cascadeMinWin, params_.cascadeMaxWin);
+        groupRectangles(rois, 1);
 
-			filteredRois = verifyROIs(cropped, rois);
-			return filteredRois;
-		}
+        result = verifyROIs(cropped, rois);
 	}
+    return result;
 }
 
 /*!
@@ -96,9 +109,9 @@ std::vector<cv::Rect> ObjDetector::detect(cv::Mat& frame){
 * @param[in] rois vector containing the candidate ROIs
 * \return a vector of ROIs that passed the verification
 */
-std::vector<cv::Rect> ObjDetector::verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois){
+std::vector<ObjDetector::Result> ObjDetector::verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois){
 
-	std::vector<cv::Rect> outRois;
+    std::vector<ObjDetector::Result> result;
 	double prob_est[2];
 	std::vector<float> desc;
 	for (int r = 0; r < rois.size(); r++){
@@ -121,11 +134,14 @@ std::vector<cv::Rect> ObjDetector::verifyROIs(cv::Mat& frame, std::vector<cv::Re
 		res.release();
 		desc.clear();
 
-		int predict_label = svm_predict_probability(model_, x, prob_est);
-		if (prob_est[0] > params_.SVMThreshold)
-			outRois.push_back(rois[r]);
+        int predict_label = roundMe( svm_predict_probability(model_, x, prob_est) );
+        if ( (FOREGROUND == predict_label) && (prob_est[0] > params_.SVMThreshold) )  //Possible bug?
+        {
+            assert(prob_est[0] > prob_est[1]);
+            result.push_back( {rois[r], prob_est[0] } );
+        }
 		delete(x);
 	}
 
-	return outRois;
+	return result;
 }
