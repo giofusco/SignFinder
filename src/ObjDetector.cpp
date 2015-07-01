@@ -76,20 +76,22 @@ std::vector<cv::Rect> ObjDetector::detect(cv::Mat& frame){
 		if (params_.transpose){
 			frame = frame.t();
 			frame.copyTo(currFrame);
-			//cropping
-			cv::Mat cropped;
-			frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().width*params_.croppingFactors[1])).copyTo(cropped);
-
-			if (params_.showIntermediate)
-				cv::imshow("Cropped Input", cropped);
-
-			std::vector<cv::Rect> rois, filteredRois;
-			cascade_.detectMultiScale(cropped, rois, params_.cascadeScaleFactor, 0, 0, params_.cascadeMinWin, params_.cascadeMaxWin);
-			groupRectangles(rois, 1);
-
-			filteredRois = verifyROIs(cropped, rois);
-			return filteredRois;
 		}
+
+		//cropping
+		cv::Mat cropped;
+		frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().width*params_.croppingFactors[1])).copyTo(cropped);
+
+		if (params_.showIntermediate)
+			cv::imshow("Cropped Input", cropped);
+
+		std::vector<cv::Rect> rois, filteredRois;
+		cascade_.detectMultiScale(cropped, rois, params_.cascadeScaleFactor, 0, 0, params_.cascadeMinWin, params_.cascadeMaxWin);
+		groupRectangles(rois, 1);
+
+		filteredRois = verifyROIs(cropped, rois);
+		return filteredRois;
+	
 	}
 }
 
