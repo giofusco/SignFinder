@@ -10,6 +10,7 @@ set( NAME_SRC
     src/ObjDetector.cpp
 )
 
+
 #Find OpenCV
 find_package(OpenCV REQUIRED )
 if (OpenCV_FOUND)
@@ -19,7 +20,9 @@ if (OpenCV_FOUND)
   include_directories(${OpenCV_INCLUDE_DIRS})
 endif()
 
+
 #Find LibSVM
+set(LIBSVM_LIBRARY "")
 find_package(LibSVM)
 if (LIBSVM_FOUND)
   message(STATUS "LibSVM Found")
@@ -44,7 +47,11 @@ else(CMAKE_BUILD_TYPE MATCHES DEBUG)
     message(STATUS "Release mode")
 ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+file(GLOB NAME_HEADERS "include/*.h" "include/*.hpp")
+
 set(OUTPUT_FOLDER ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_FOLDER})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_FOLDER})

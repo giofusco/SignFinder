@@ -12,6 +12,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
    limitations under the License.
+  
+Author: Giovanni Fusco - giofusco@ski.org
 
 */
 
@@ -83,7 +85,7 @@ std::vector<ObjDetector::Result> ObjDetector::detect(cv::Mat& frame){
 		if (params_.flip)
 			flip(frame, frame, 0);
 
-        if (params_.transpose)          //possible bug?
+        if (params_.transpose)      
 			frame = frame.t();
         
         frame.copyTo(currFrame);
@@ -91,12 +93,21 @@ std::vector<ObjDetector::Result> ObjDetector::detect(cv::Mat& frame){
         cv::Mat cropped;
         frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().width*params_.croppingFactors[1])).copyTo(cropped);
 
-        if (params_.showIntermediate)
-            cv::imshow("Cropped Input", cropped);
-
         std::vector<cv::Rect> rois, filteredRois;
         cascade_.detectMultiScale(cropped, rois, params_.cascadeScaleFactor, 0, 0, params_.cascadeMinWin, params_.cascadeMaxWin);
-        groupRectangles(rois, 1);
+		groupRectangles(rois, 1);
+
+		if (params_.showIntermediate){
+			cv::imshow("Cropped Input", cropped);
+			cv::Mat tmp;
+			cropped.copyTo(tmp); // temporary copy to avoid changing pixels in the original image
+			for (const auto& r : rois){
+				cv::rectangle(tmp, r, cv::Scalar(0, 255, 0), 2);
+			}
+			cv::imshow("Stage 1", tmp);
+		}
+
+       
 
         result = verifyROIs(cropped, rois);
 	}
@@ -135,7 +146,8 @@ std::vector<ObjDetector::Result> ObjDetector::verifyROIs(cv::Mat& frame, std::ve
 		desc.clear();
 
         int predict_label = roundMe( svm_predict_probability(model_, x, prob_est) );
-        if ( (FOREGROUND == predict_label) && (prob_est[0] > params_.SVMThreshold) )  //Possible bug?
+        //if ( (FOREGROUND == predict_label) && (prob_est[0] > params_.SVMThreshold) )  //Possible bug?
+		if ((prob_est[0] > params_.SVMThreshold))  //Possible bug?
         {
             assert(prob_est[0] > prob_est[1]);
             result.push_back( {rois[r], prob_est[0] } );

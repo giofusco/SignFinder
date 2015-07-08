@@ -11,7 +11,9 @@ Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
-   limitations under the License.
+limitations under the License.
+
+Author: Giovanni Fusco - giofusco@ski.org
 
 */
 
@@ -42,18 +44,18 @@ int main(int argc, char* argv[]){
 					//plotting ROIs
                     for (const auto& res: result)
                     {
-						rectangle(detector.currFrame, res.roi, cv::Scalar(0, 0, 255), 2);
-                        //write confidence and size
+						cv::rectangle(detector.currFrame, res.roi, cv::Scalar(0, 0, 255), 2);
+                        //write confidence and size 
                         putText(detector.currFrame, "p=" + std::to_string(res.confidence), res.roi.br(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
                         putText(detector.currFrame, std::to_string(res.roi.width) + "x" + std::to_string(res.roi.height), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
                     }
 					cv::imshow("Detection", detector.currFrame);
-                    if ( !result.empty() )
+                   /* if ( !result.empty() )
                     {
                         std::string filename = "frame_" + std::to_string(frameno) + ".jpg";
                         std::cerr << "Detected " << result.size() << " signs. Saving " << filename << std::endl;
                         cv::imwrite(filename, detector.currFrame);
-                    }
+                    }*/
 
 					keypress = cv::waitKey(1);
 
