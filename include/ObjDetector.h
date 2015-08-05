@@ -16,7 +16,8 @@ limitations under the License.
 #ifndef OBJ_DETECTOR_H
 #define OBJ_DETECTOR_H
 
-
+#include <time.h> 
+#include <limits.h>
 #include "DetectionParams.h"
 #include "svm.h"
 
@@ -30,16 +31,18 @@ limitations under the License.
 class ObjDetector
 {
 public:
-    struct Result
+    struct DetectionInfo	
     {
         cv::Rect roi;
         double confidence;
-    };
+    }; ///< Structure containing detection information.
+	   ///< It contains the ROI in the image where the detection occurred and the corresponging confidence value (SVM likelihood) assigned by the second stage classifier
 
     ObjDetector();	///< basic constructor. The parameters are not initialized.
 	ObjDetector(std::string yamlConfigFile) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
 	~ObjDetector();
-	std::vector<Result> detect(cv::Mat& frame);	///< performs object detection on the frame in input.
+	std::vector<DetectionInfo> detect(cv::Mat& frame);	///< performs object detection on the frame in input.
+	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS);	///< performs object detection on the frame in input and returns the frame rate.
 	inline void init(std::string yamlConfigFile) 
 		throw (std::runtime_error) /// initializes the parameters using the file in input. 
 		{ params_.loadFromFile(yamlConfigFile); }; 
@@ -48,12 +51,18 @@ public:
 
 private:
 	void init() throw (std::runtime_error);	///< initializes the classifiers
-	std::vector<ObjDetector::Result> verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois); ///< Filters candidate ROIs using SVM
+	std::vector<ObjDetector::DetectionInfo> verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois); ///< Filters candidate ROIs using SVM
 
 	DetectionParams params_;			///< parameters of the detector
 	cv::CascadeClassifier cascade_;		///< cascade classifier
 	cv::HOGDescriptor hog_;				///< hog feature extractor
 	struct svm_model* model_;			///< svm classifier
+
+	time_t start_;
+	time_t end_;
+	int counter_ = 0;
+	double sec_;
+	double fps_;
 };
 
 #endif

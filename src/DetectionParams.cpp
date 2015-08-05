@@ -60,7 +60,7 @@ void DetectionParams::loadFromFile(std::string yamlConfigFile) throw(std::runtim
 
 	try{
 		cv::FileStorage fs(yamlConfigFile, cv::FileStorage::READ);
-
+		configFileName = yamlConfigFile;
 
 		if (fs.isOpened()){
 			cascadeFile = (std::string)fs["CascadeFile"];

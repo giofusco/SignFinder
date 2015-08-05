@@ -19,19 +19,6 @@ Author: Giovanni Fusco - giofusco@ski.org
 
 #include "ObjDetector.h"
 
-namespace
-{
-    int roundMe(double val)
-    {
-        return (val - std::floor(val) >= std::ceil(val) - val ? std::ceil(val) : std::floor(val));
-    }
-    
-    enum Labels
-    {
-        FOREGROUND = 1,
-        BACKGROUND = -1
-    };
-}
 ObjDetector::ObjDetector()
 {
 	params_ = DetectionParams();
@@ -70,14 +57,40 @@ void ObjDetector::init()throw(std::runtime_error){
 		throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load SVM classifier.\n"));
 }
 
+
+
 /*!
 * Use 2-Stages object detector on the input frame.
 * @param[in] frame
-* \return a vector of detection ROIs 
+* @param[out] FPS 
+* \return a vector of DetectionInfo containing information about the detections and the frame rate
 */
-std::vector<ObjDetector::Result> ObjDetector::detect(cv::Mat& frame){
+std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, double& FPS){
+	
+	
+	//measure delta_T
+	if (counter_ == 0)
+		time(&start_);
+	std::vector<ObjDetector::DetectionInfo> result = detect(frame);
 
-    std::vector<ObjDetector::Result> result;
+	time(&end_);
+	counter_++;
+	sec_ = difftime(end_, start_);
+	fps_ = counter_ / sec_;
+	FPS = fps_;
+	return result;
+}
+
+
+
+/*!
+* Use 2-Stages object detector on the input frame.
+* @param[in] frame
+* \return a vector of DetectionInfo containing information about the detections 
+*/
+std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame){
+
+	std::vector<ObjDetector::DetectionInfo> result;
 	if (params_.isInit()){
 		if (params_.scalingFactor != 1 && params_.scalingFactor > 0)
 			resize(frame, frame, cv::Size(frame.size().width * params_.scalingFactor, frame.size().height* params_.scalingFactor));
@@ -91,7 +104,7 @@ std::vector<ObjDetector::Result> ObjDetector::detect(cv::Mat& frame){
         frame.copyTo(currFrame);
         //cropping
         cv::Mat cropped;
-        frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().width*params_.croppingFactors[1])).copyTo(cropped);
+        frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().height*params_.croppingFactors[1])).copyTo(cropped);
 
         std::vector<cv::Rect> rois, filteredRois;
         cascade_.detectMultiScale(cropped, rois, params_.cascadeScaleFactor, 0, 0, params_.cascadeMinWin, params_.cascadeMaxWin);
@@ -107,8 +120,6 @@ std::vector<ObjDetector::Result> ObjDetector::detect(cv::Mat& frame){
 			cv::imshow("Stage 1", tmp);
 		}
 
-       
-
         result = verifyROIs(cropped, rois);
 	}
     return result;
@@ -118,13 +129,15 @@ std::vector<ObjDetector::Result> ObjDetector::detect(cv::Mat& frame){
 * Verifies the ROIs detected in the first stage using SVM + HOG
 * @param[in] frame frame to process
 * @param[in] rois vector containing the candidate ROIs
-* \return a vector of ROIs that passed the verification
+* \return a vector of detections that passed the verification
 */
-std::vector<ObjDetector::Result> ObjDetector::verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois){
+std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois){
 
-    std::vector<ObjDetector::Result> result;
+	std::vector<ObjDetector::DetectionInfo> result;
 	double prob_est[2];
 	std::vector<float> desc;
+	
+
 	for (int r = 0; r < rois.size(); r++){
 		//use svm to classify the rois
 		cv::Mat patch(frame, rois[r]);
@@ -132,9 +145,10 @@ std::vector<ObjDetector::Result> ObjDetector::verifyROIs(cv::Mat& frame, std::ve
 		cv::Mat res(1, 1, CV_32FC1);
 		resize(patch, patch, params_.hogWinSize);
 		hog_.compute(patch, desc);
+
 		svm_node *x;
 		x = (struct svm_node *)malloc((desc.size() + 1)*sizeof(struct svm_node));
-
+		
 		for (int d = 0; d<desc.size(); d++){
 			x[d].index = d + 1;  // Index starts from 1; Pre-computed kernel starts from 0
 			x[d].value = desc[d];
@@ -144,16 +158,15 @@ std::vector<ObjDetector::Result> ObjDetector::verifyROIs(cv::Mat& frame, std::ve
 		patch.release();
 		res.release();
 		desc.clear();
-
-        int predict_label = roundMe( svm_predict_probability(model_, x, prob_est) );
-        //if ( (FOREGROUND == predict_label) && (prob_est[0] > params_.SVMThreshold) )  //Possible bug?
-		if ((prob_est[0] > params_.SVMThreshold))  //Possible bug?
-        {
-            assert(prob_est[0] > prob_est[1]);
-            result.push_back( {rois[r], prob_est[0] } );
-        }
+		
+		svm_predict_probability(model_, x, prob_est);
+		
 		delete(x);
+		
+		if ((prob_est[0] > params_.SVMThreshold))
+            result.push_back( {rois[r], prob_est[0] } );
 	}
+	
 
 	return result;
 }

@@ -31,31 +31,30 @@ int main(int argc, char* argv[]){
 		try{
 			ObjDetector detector(argv[1]);
 			std::string videoname(argv[2]);
-			cv::VideoCapture vc;
-            
-			if (vc.open(videoname)){
+			std::string outputFileName;
+			cv::VideoCapture vc(videoname);
+
+			if (vc.isOpened()){
 				cv::Mat frame;
 				int keypress;
-                int frameno = 0;
+				int frameno = 0;
+				double fps = 0;
 				while (vc.read(frame)){
-                    ++frameno;
-					auto result = detector.detect(frame);
-					
-					//plotting ROIs
-                    for (const auto& res: result)
-                    {
+
+					++frameno;
+
+					auto result = detector.detect(frame, fps);
+					putText(detector.currFrame, "FPS: " + std::to_string(fps), cv::Point(100, detector.currFrame.size().height - 100), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 255, 0));
+
+					//plotting ROIs and confidence values
+					for (const auto& res : result)
+					{
 						cv::rectangle(detector.currFrame, res.roi, cv::Scalar(0, 0, 255), 2);
-                        //write confidence and size 
-                        putText(detector.currFrame, "p=" + std::to_string(res.confidence), res.roi.br(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
-                        putText(detector.currFrame, std::to_string(res.roi.width) + "x" + std::to_string(res.roi.height), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
-                    }
+						//write confidence and size 
+						putText(detector.currFrame, "p=" + std::to_string(res.confidence), res.roi.br(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
+						putText(detector.currFrame, std::to_string(res.roi.width) + "x" + std::to_string(res.roi.height), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
+					}
 					cv::imshow("Detection", detector.currFrame);
-                   /* if ( !result.empty() )
-                    {
-                        std::string filename = "frame_" + std::to_string(frameno) + ".jpg";
-                        std::cerr << "Detected " << result.size() << " signs. Saving " << filename << std::endl;
-                        cv::imwrite(filename, detector.currFrame);
-                    }*/
 
 					keypress = cv::waitKey(1);
 
