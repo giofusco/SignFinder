@@ -3,16 +3,16 @@
 # ATTENTION: DO NOT USE TAB CHARACTERS WHEN EDITING THIS FILE (you can replace tabs with spaces in you editor settings)
 
 # Classifiers location
-CascadeFile: "res/cascade.xml"     # full path to cascade classifier CascadeFile
-SVMFile: "res/exitModel.svm"       # full path to SVM model 
+CascadeFile: "C:/dev/workspace/WICAB_SingFinding/Deliverable/SignFinder/build/bin/res/exit_sign_cascade.xml"     # full path to cascade classifier CascadeFile
+SVMFile: "C:/dev/workspace/WICAB_SingFinding/Deliverable/SignFinder/build/bin/res/exit_sign_model.svm"       # full path to SVM model 
 
 # Cascade search window parameters. It can be changed, but it is a good idea to keep the same aspect ratio (w/h = 1.5)
 minWinSize:
-    width: 18
-    height: 12
+    width: 36
+    height: 24
 CascadeScaleFactor: 1.1    # scale factor for multiscale detection 
 
-maxWinSizeFactor: 8.       #specify largest search window as a multiple of minWinSize
+maxWinSizeFactor: 10.       #specify largest search window as a multiple of minWinSize
 
 # HOG
 HOG_winSize:               # DO NOT CHANGE: this parameter should be changed only if the SVM is trained with a different window size 
