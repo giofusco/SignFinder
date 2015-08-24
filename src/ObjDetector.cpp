@@ -30,6 +30,12 @@ ObjDetector::ObjDetector(std::string yamlConfigFile) throw(std::runtime_error) :
 	init();
 }
 
+ObjDetector::ObjDetector(std::string yamlConfigFile, std::string classifiersFolder) throw(std::runtime_error) : ObjDetector(){
+	params_.loadFromFile(yamlConfigFile, classifiersFolder);
+	init();
+}
+
+void setClassifiersFolder(std::string folder);
 
 ObjDetector::~ObjDetector()
 {
@@ -41,6 +47,7 @@ ObjDetector::~ObjDetector()
 * \exception std::runtime_error error loading one of the classfiers
 */
 void ObjDetector::init()throw(std::runtime_error){
+	counter_ = 0;
 	if (!cascade_.load(params_.cascadeFile))
 		throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load cascade classifier.\n"));
 
@@ -136,7 +143,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, 
 	std::vector<ObjDetector::DetectionInfo> result;
 	double prob_est[2];
 	std::vector<float> desc;
-	
+
 
 	for (int r = 0; r < rois.size(); r++){
 		//use svm to classify the rois
@@ -148,7 +155,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, 
 
 		svm_node *x;
 		x = (struct svm_node *)malloc((desc.size() + 1)*sizeof(struct svm_node));
-		
+
 		for (int d = 0; d<desc.size(); d++){
 			x[d].index = d + 1;  // Index starts from 1; Pre-computed kernel starts from 0
 			x[d].value = desc[d];
@@ -158,14 +165,15 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, 
 		patch.release();
 		res.release();
 		desc.clear();
-		
+
 		svm_predict_probability(model_, x, prob_est);
-		
+
 		delete(x);
-		
+
 		if ((prob_est[0] > params_.SVMThreshold))
-            result.push_back( {rois[r], prob_est[0] } );
+			result.push_back({ rois[r], prob_est[0] });
 	}
-	
+
 
 	return result;
+}

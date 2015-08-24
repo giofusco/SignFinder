@@ -40,6 +40,7 @@ public:
 
     ObjDetector();	///< basic constructor. The parameters are not initialized.
 	ObjDetector(std::string yamlConfigFile) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
+	ObjDetector(std::string yamlConfigFile, std::string classifiersFolder) throw(std::runtime_error); ///< constructor. The parameters are inizialized using the file passed in input and the specified classifiers folder.
 	~ObjDetector();
 	std::vector<DetectionInfo> detect(cv::Mat& frame);	///< performs object detection on the frame in input.
 	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS);	///< performs object detection on the frame in input and returns the frame rate.
@@ -60,7 +61,7 @@ private:
 
 	time_t start_;
 	time_t end_;
-	int counter_ = 0;
+	int counter_;
 	double sec_;
 	double fps_;
 };

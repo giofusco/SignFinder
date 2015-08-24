@@ -11,7 +11,7 @@ Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
-   limitations under the License.
+limitations under the License.
 
 Author: Giovanni Fusco - giofusco@ski.org
 
@@ -20,7 +20,7 @@ Author: Giovanni Fusco - giofusco@ski.org
 #include "DetectionParams.h"
 
 /*!
-* Basic constructor. The state will not be valid, 
+* Basic constructor. The state will not be valid,
 * unless loadFromFile is successively called.
 */
 DetectionParams::DetectionParams()
@@ -34,10 +34,10 @@ DetectionParams::DetectionParams()
 * @param[in] yamlConfigFile the full path to the configuration file to parse
 * \exception std::runtime_error error accessing or parsing the configuration file
 */
-DetectionParams::DetectionParams(std::string yamlConfigFile) throw(std::runtime_error){
+DetectionParams::DetectionParams(std::string yamlConfigFile, std::string classifiersFolder) throw(std::runtime_error){
 
 	DetectionParams();
-	loadFromFile(yamlConfigFile);
+	loadFromFile(yamlConfigFile, classifiersFolder);
 }
 
 
@@ -48,12 +48,22 @@ DetectionParams::~DetectionParams()
 {
 }
 
+/*!
+* Initialize the parameters using a configuration file. The folder containing the classifiers to load is read from the configuration file
+* @param[in] yamlConfigFile the full path to the configuration file to parse
+*/
+void DetectionParams::loadFromFile(std::string yamlConfigFile) throw(std::runtime_error){
+	std::string foo;
+	loadFromFile(yamlConfigFile, foo);
+}
+
 
 /*!
 * Initialize the parameters using a configuration file
 * @param[in] yamlConfigFile the full path to the configuration file to parse
+* @param[in] classifiersFolder the folder containing the classifiers to load
 */
-void DetectionParams::loadFromFile(std::string yamlConfigFile) throw(std::runtime_error){
+void DetectionParams::loadFromFile(std::string yamlConfigFile, std::string classFolder) throw(std::runtime_error){
 
 	cv::FileNode n;
 	cv::FileNodeIterator it;
@@ -63,13 +73,27 @@ void DetectionParams::loadFromFile(std::string yamlConfigFile) throw(std::runtim
 		configFileName = yamlConfigFile;
 
 		if (fs.isOpened()){
+
+			//if the folder containing the classifiers is not specified read it from the config file
+			if (classFolder.empty()){
+				this->classifiersFolder = (std::string)fs["ClassifiersFolder"];
+				if (classifiersFolder.empty())
+					throw (std::runtime_error("CONFIG PARSER ERROR :: Classifiers Folder not specified. \n"));
+			}
+			else classifiersFolder = classFolder;
+
+			//replace separators with the right ones
+			fixPathString(classifiersFolder);
+			
 			cascadeFile = (std::string)fs["CascadeFile"];
 			if (cascadeFile.empty())
 				throw (std::runtime_error("CONFIG PARSER ERROR :: Cascade Classifier not specified. \n"));
+			cascadeFile = classifiersFolder + cascadeFile; //full filename
 
 			svmModelFile = (std::string)fs["SVMFile"];
 			if (svmModelFile.empty())
 				throw (std::runtime_error("CONFIG PARSER ERROR :: SVM Classifier not specified. \n"));
+			svmModelFile = classifiersFolder + svmModelFile; //full filename
 
 			n = fs["minWinSize"];
 			if (!n.empty()){
@@ -179,5 +203,23 @@ void DetectionParams::loadFromFile(std::string yamlConfigFile) throw(std::runtim
 	{
 		throw(e);
 	}
+
+}
+
+void DetectionParams::fixPathString(std::string& instring){
+
+	char  sep = separator();
+
+#ifdef _WIN32
+	std::replace(instring.begin(), instring.end(), '/', '\\'); // replace all '/' to '\'
+#else
+	std::replace(instring.begin(), instring.end(), '\\', '/'); // replace all '\' to '/'
+#endif
+	if (instring.back() != sep)
+		instring.push_back(sep);
+
+}
+
+void DetectionParams::setClassifiersFolder(std::string folder){ ///< sets the folder containing the classifiers (useful to change path at runtime)
 
 }

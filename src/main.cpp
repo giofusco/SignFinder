@@ -29,6 +29,11 @@ int main(int argc, char* argv[]){
 	else{
 
 		try{
+
+			//**** example of usage with hardcoded path
+			// std::string basedir = "C:/dev/workspace/WICAB_SingFinding/Deliverable/SignFinder/build/bin/res";
+			// ObjDetector detector(argv[1], basedir);
+			//****
 			ObjDetector detector(argv[1]);
 			std::string videoname(argv[2]);
 			std::string outputFileName;
