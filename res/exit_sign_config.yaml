@@ -3,8 +3,9 @@
 # ATTENTION: DO NOT USE TAB CHARACTERS WHEN EDITING THIS FILE (you can replace tabs with spaces in you editor settings)
 
 # Classifiers location
-CascadeFile: "C:/dev/workspace/WICAB_SingFinding/Deliverable/SignFinder/build/bin/res/exit_sign_cascade.xml"     # full path to cascade classifier CascadeFile
-SVMFile: "C:/dev/workspace/WICAB_SingFinding/Deliverable/SignFinder/build/bin/res/exit_sign_model.svm"       # full path to SVM model 
+ClassifiersFolder: "C:/dev/workspace/WICAB_SingFinding/Deliverable/SignFinder/build/bin/res/"    #folder containing the classifiers (used for desktop only)
+CascadeFile: "exit_sign_cascade.xml"     # cascade classifier filename
+SVMFile: "exit_sign_model.svm"       # SVM model 
 
 # Cascade search window parameters. It can be changed, but it is a good idea to keep the same aspect ratio (w/h = 1.5)
 minWinSize:
