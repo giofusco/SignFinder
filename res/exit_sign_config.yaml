@@ -9,11 +9,11 @@ SVMFile: "exit_sign_model.svm"       # SVM model
 
 # Cascade search window parameters. It can be changed, but it is a good idea to keep the same aspect ratio (w/h = 1.5)
 minWinSize:
-    width: 18
-    height: 12
-CascadeScaleFactor: 1.4    # scale factor for multiscale detection 
+    width: 24
+    height: 18
+CascadeScaleFactor: 1.2    # scale factor for multiscale detection 
 
-maxWinSizeFactor: 11.       #specify largest search window as a multiple of minWinSize
+maxWinSizeFactor: 6.       #specify largest search window as a multiple of minWinSize
 
 # HOG
 HOG_winSize:               # DO NOT CHANGE: this parameter should be changed only if the SVM is trained with a different window size 
@@ -27,10 +27,10 @@ CroppingFactors:           # specify which section of the image to process. Crop
     width: 1.0
     height: 0.66
 
-ScaleFactor: 0.66          # specify rescaling factor for cropped frames (helps with detection of small objects)
+ScaleFactor: 0.6          # specify rescaling factor for cropped frames (helps with detection of small objects)
 
 Flip: 1                    # flip input frames  (used for portrait vs landscape videos)
 Transpose: 1               # transpose input frames (used for portrait vs landscape videos)
 
 # Debug options
-ShowIntermediate: 0
+ShowIntermediate: 1
