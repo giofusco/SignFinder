@@ -44,9 +44,12 @@ public:
 	~ObjDetector();
 	std::vector<DetectionInfo> detect(cv::Mat& frame);	///< performs object detection on the frame in input.
 	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS);	///< performs object detection on the frame in input and returns the frame rate.
+	
 	inline void init(std::string yamlConfigFile) 
 		throw (std::runtime_error) /// initializes the parameters using the file in input. 
-		{ params_.loadFromFile(yamlConfigFile); }; 
+		{ params_.loadFromFile(yamlConfigFile);
+		  init();
+		};
 	
 	cv::Mat currFrame; ///< last processed frame
 
@@ -58,6 +61,7 @@ private:
 	cv::CascadeClassifier cascade_;		///< cascade classifier
 	cv::HOGDescriptor hog_;				///< hog feature extractor
 	struct svm_model* model_;			///< svm classifier
+	bool init_;
 
 	time_t start_;
 	time_t end_;

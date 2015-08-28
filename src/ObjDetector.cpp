@@ -22,12 +22,14 @@ Author: Giovanni Fusco - giofusco@ski.org
 ObjDetector::ObjDetector()
 {
 	params_ = DetectionParams();
+	init_ = false;
 }
 
 
 ObjDetector::ObjDetector(std::string yamlConfigFile) throw(std::runtime_error) : ObjDetector(){
 	params_.loadFromFile(yamlConfigFile);
 	init();
+	
 }
 
 ObjDetector::ObjDetector(std::string yamlConfigFile, std::string classifiersFolder) throw(std::runtime_error) : ObjDetector(){
@@ -58,10 +60,13 @@ void ObjDetector::init()throw(std::runtime_error){
 	hog_.cellSize = cv::Size(8, 8);
 	hog_.nlevels = 1;
 
-	//setting up SVM
+	//setting up SVM, free previously allocated classifier if any
+	if (init_)
+		delete(model_);
 	model_ = svm_load_model(params_.svmModelFile.c_str());
 	if (model_ == NULL)
 		throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load SVM classifier.\n"));
+	init_ = true;
 }
 
 

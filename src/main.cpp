@@ -24,20 +24,29 @@ Author: Giovanni Fusco - giofusco@ski.org
 
 int main(int argc, char* argv[]){
 
-	if (argc < 3)
-		std::cout << "Not enough input parameters. USAGE: signFinder ParametersFile videoFile.\n";
+	if (argc < 2)
+		std::cout << "Not enough input parameters. USAGE: signFinder ParametersFile [videoFile] \n";
 	else{
 
 		try{
 
 			//**** example of usage with hardcoded path
-			// std::string basedir = "C:/dev/workspace/WICAB_SingFinding/Deliverable/SignFinder/build/bin/res";
+			//std::string basedir = "C:\\dev\\workspace\\WICAB_SingFinding\\Deliverable\\SignFinder\\build\\bin\\res";
 			// ObjDetector detector(argv[1], basedir);
 			//****
 			ObjDetector detector(argv[1]);
-			std::string videoname(argv[2]);
-			std::string outputFileName;
-			cv::VideoCapture vc(videoname);
+			std::string videoname;
+			cv::VideoCapture vc;
+			if (argc == 3){
+				videoname = std::string(argv[2]);
+				vc = cv::VideoCapture(videoname);
+			}
+			else{
+				vc = cv::VideoCapture(1);
+				vc.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
+				vc.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
+			}
+
 
 			if (vc.isOpened()){
 				cv::Mat frame;
