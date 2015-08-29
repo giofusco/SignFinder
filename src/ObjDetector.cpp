@@ -102,7 +102,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, doub
 */
 std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame){
 
-	std::vector<ObjDetector::DetectionInfo> result;
+	result_.clear();
 	if (params_.isInit()){
 		if (params_.scalingFactor != 1 && params_.scalingFactor > 0)
 			resize(frame, frame, cv::Size(frame.size().width * params_.scalingFactor, frame.size().height* params_.scalingFactor));
@@ -118,23 +118,23 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame){
         cv::Mat cropped;
         frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().height*params_.croppingFactors[1])).copyTo(cropped);
 
-        std::vector<cv::Rect> rois, filteredRois;
-        cascade_.detectMultiScale(cropped, rois, params_.cascadeScaleFactor, 0, 0, params_.cascadeMinWin, params_.cascadeMaxWin);
-		groupRectangles(rois, 1);
+		rois_.clear();
+        cascade_.detectMultiScale(cropped, rois_, params_.cascadeScaleFactor, 0, 0, params_.cascadeMinWin, params_.cascadeMaxWin);
+		groupRectangles(rois_, 1);
 
 		if (params_.showIntermediate){
 			cv::imshow("Cropped Input", cropped);
 			cv::Mat tmp;
 			cropped.copyTo(tmp); // temporary copy to avoid changing pixels in the original image
-			for (const auto& r : rois){
+			for (const auto& r : rois_){
 				cv::rectangle(tmp, r, cv::Scalar(0, 255, 0), 2);
 			}
 			cv::imshow("Stage 1", tmp);
 		}
 
-        result = verifyROIs(cropped, rois);
+        result_ = verifyROIs(cropped, rois_);
 	}
-    return result;
+    return result_;
 }
 
 /*!
@@ -181,4 +181,14 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, 
 
 
 	return result;
+}
+
+void ObjDetector::dumpStage1(std::string prefix){
+	int cnt = 0;
+	for (const auto& r : rois_){
+		cnt++;
+		cv::Mat p = currFrame(r);
+		std::string fname = prefix+ "_" + std::to_string(counter_) + "_" + std::to_string(cnt) + ".png";
+		cv::imwrite(fname, p);
+	}
 }
