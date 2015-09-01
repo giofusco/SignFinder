@@ -27,7 +27,7 @@ CroppingFactors:           # specify which section of the image to process. Crop
     width: 1.0
     height: 0.66
 
-ScaleFactor: 0.66          # specify rescaling factor for cropped frames (helps with detection of small objects)
+ScaleFactor: 1.0  # specify rescaling factor for cropped frames (helps with detection of small objects)
 
 Flip: 0                    # flip input frames  (used for portrait vs landscape videos)
 Transpose: 0               # transpose input frames (used for portrait vs landscape videos)
