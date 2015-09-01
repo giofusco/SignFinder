@@ -18,15 +18,49 @@ Author: Giovanni Fusco - giofusco@ski.org
 */
 
 
-
 #include "ObjDetector.h"
 #include <exception>
 
+
+
+std::map<std::string, std::string> parseOptions(int argc, char* argv[]){
+	std::map<std::string, std::string> options;
+	int o = 1;
+	std::string opt;
+	while (o < argc){
+		opt = argv[o];
+
+		if (opt == "-config"){
+			options.insert(std::make_pair("config", argv[o + 1]));
+		}
+		else if (opt == "-video"){
+			options.insert(std::make_pair("video", argv[o + 1]));
+		}
+		else if (opt == "-camid"){
+			options.insert(std::make_pair("camid", argv[o + 1]));
+		}
+		else if (opt == "-dump"){
+			options.insert(std::make_pair("dump", argv[o + 1]));
+		}
+		else if (opt == "-save")
+			options.insert(std::make_pair("save", "1"));
+		o++;
+
+	}
+	return options;
+}
+
+
+
+
+
 int main(int argc, char* argv[]){
 
-	if (argc < 2)
-		std::cout << "Not enough input parameters. USAGE: signFinder ParametersFile [videoFile] \n";
+	if (argc < 3)
+		std::cout << "Not enough input parameters. USAGE: signFinder -config ParametersFile  ( -video videoFile | -camid webcamID ) [-dump prefix_dumped_patches] [-save] \n";
 	else{
+
+		std::map<std::string, std::string> options = parseOptions(argc, argv);
 
 		try{
 
@@ -34,19 +68,35 @@ int main(int argc, char* argv[]){
 			//std::string basedir = "C:\\dev\\workspace\\WICAB_SingFinding\\Deliverable\\SignFinder\\build\\bin\\res";
 			// ObjDetector detector(argv[1], basedir);
 			//****
-			ObjDetector detector(argv[1]);
+
+			std::cerr << options["config"] << "\n";
+			ObjDetector detector(options["config"]);
+
 			std::string videoname;
 			cv::VideoCapture vc;
-			if (argc == 3){
-				videoname = std::string(argv[2]);
-				vc = cv::VideoCapture(videoname);
-			}
-			else{
-				vc = cv::VideoCapture(1);
+			if (options.count("camid") > 0){
+				vc = cv::VideoCapture(std::stoi(options["camid"]));
 				vc.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
 				vc.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
 			}
 
+			else if (options.count("video") > 0)
+				vc = cv::VideoCapture(options["video"]);
+
+			else{
+				throw(std::runtime_error("SIGNFINDER ERROR :: No video source has been specified.\n"));
+			}
+
+			bool dumpPatches = false;
+			bool saveFrames = false;
+			std::string patchPrefix;
+			if (options.count("dump") > 0){
+				dumpPatches = true;
+				patchPrefix = options["dump"];
+			}
+
+			if (options.count("save") > 0)
+				saveFrames = true;
 
 			if (vc.isOpened()){
 				cv::Mat frame;
@@ -58,6 +108,8 @@ int main(int argc, char* argv[]){
 					++frameno;
 
 					auto result = detector.detect(frame, fps);
+					if (dumpPatches)
+						detector.dumpStage1(patchPrefix);
 					putText(detector.currFrame, "FPS: " + std::to_string(fps), cv::Point(100, detector.currFrame.size().height - 100), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 255, 0));
 
 					//plotting ROIs and confidence values
@@ -69,7 +121,8 @@ int main(int argc, char* argv[]){
 						putText(detector.currFrame, std::to_string(res.roi.width) + "x" + std::to_string(res.roi.height), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
 					}
 					cv::imshow("Detection", detector.currFrame);
-
+					if (saveFrames)
+						cv::imwrite(std::string("frame_" + std::to_string(frameno) + ".png"), detector.currFrame);
 					keypress = cv::waitKey(1);
 
 					if (keypress == 27) //exit on escape
