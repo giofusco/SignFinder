@@ -44,7 +44,7 @@ import android.widget.RadioButton;
 public class WicabCamAct extends Activity implements SurfaceHolder.Callback, View.OnClickListener{
     private static final String  TAG = "WicabCam:  ";
 
-    static String data_signature = "2015-08-27-0";
+    static String data_signature = "2015-08-31";
     
 	int width= 640, height = 480;
 	
@@ -236,7 +236,7 @@ public class WicabCamAct extends Activity implements SurfaceHolder.Callback, Vie
 			Log.e("tag", "Exception in copyFile() " + e.toString());
 		}
 	}
-
+ 
 	String yamlName = "";
 	void selectTarget(String target){
 		imView.setVisibility(View.VISIBLE);
