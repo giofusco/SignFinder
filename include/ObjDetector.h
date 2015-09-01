@@ -46,13 +46,11 @@ public:
 	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS);	///< performs object detection on the frame in input and returns the frame rate.
 	
 	inline void init(std::string yamlConfigFile) 
-		throw (std::runtime_error) ///< initializes the parameters using the file in input. 
+		throw (std::runtime_error) /// initializes the parameters using the file in input. 
 		{ params_.loadFromFile(yamlConfigFile);
 		  init();
 		};
 	
-	void dumpStage1(std::string prefix); ///< saves ROIs coming from the first stage to disk
-	//void dumpStage2(); ///< saves verified ROIs to disk
 	cv::Mat currFrame; ///< last processed frame
 
 private:
@@ -64,9 +62,6 @@ private:
 	cv::HOGDescriptor hog_;				///< hog feature extractor
 	struct svm_model* model_;			///< svm classifier
 	bool init_;
-
-	std::vector<cv::Rect> rois_;
-	std::vector<ObjDetector::DetectionInfo> result_;
 
 	time_t start_;
 	time_t end_;
