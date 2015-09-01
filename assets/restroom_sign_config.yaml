@@ -1,0 +1,36 @@
+%YAML:1.0
+
+# ATTENTION: DO NOT USE TAB CHARACTERS WHEN EDITING THIS FILE (you can replace tabs with spaces in you editor settings)
+
+# Classifiers location
+ClassifiersFolder: "C:/dev/workspace/WICAB_SingFinding/Deliverable/SignFinder/build/bin/res/"    #folder containing the classifiers (used for desktop only)
+CascadeFile: "restroom_sign_cascade.xml"     # cascade classifier filename
+SVMFile: "restroom_sign_model.svm"       # SVM model 
+
+# Cascade search window parameters. It can be changed, but it is a good idea to keep the same aspect ratio 
+minWinSize:
+    width: 12
+    height: 32
+CascadeScaleFactor: 1.4    # scale factor for multiscale detection 
+
+maxWinSizeFactor: 5.       #specify largest search window as a multiple of minWinSize
+
+# HOG
+HOG_winSize:               # DO NOT CHANGE: this parameter should be changed only if the SVM is trained with a different window size 
+    width: 72
+    height: 192
+
+SVMThreshold: .05          # sets the SVM confidence threshold   
+
+# Preprocessing
+CroppingFactors:           # specify which section of the image to process. Cropping origin is (0,0) i.e. top left corner
+    width: 1.
+    height: .8
+
+ScaleFactor: 0.33          # specify rescaling factor for cropped frames (helps with detection of small objects)
+
+Flip: 1                    # flip input frames  (used for portrait vs landscape videos)
+Transpose: 1               # transpose input frames (used for portrait vs landscape videos)
+
+# Debug options
+ShowIntermediate: 1
