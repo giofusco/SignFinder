@@ -57,85 +57,94 @@ std::map<std::string, std::string> parseOptions(int argc, char* argv[]){
 int main(int argc, char* argv[]){
 
 	if (argc < 3)
+    {
 		std::cout << "Not enough input parameters. USAGE: SignFinder -res resourceLocation  ( -video videoFile | -camid webcamID ) [-dump prefix_dumped_patches] [-save] \n";
-	else{
+        return EXIT_FAILURE;
+    }
 
-		std::map<std::string, std::string> options = parseOptions(argc, argv);
+    std::map<std::string, std::string> options = parseOptions(argc, argv);
 
-		try{
+    try{
 
-			//**** example of usage with hardcoded path
-			//std::string basedir = "C:\\dev\\workspace\\WICAB_SingFinding\\Deliverable\\SignFinder\\build\\bin\\res";
-			// ObjDetector detector(argv[1], basedir);
-			//****
+        //**** example of usage with hardcoded path
+        //std::string basedir = "C:\\dev\\workspace\\WICAB_SingFinding\\Deliverable\\SignFinder\\build\\bin\\res";
+        // ObjDetector detector(argv[1], basedir);
+        //****
 
-			std::cerr << options["res"] << "\n";
-			ObjDetector detector(options["res"]);
+        std::cerr << options["res"] << "\n";
+        ObjDetector detector(options["res"]);
 
-			std::string videoname;
-			cv::VideoCapture vc;
-			if (options.count("camid") > 0){
-				vc = cv::VideoCapture(std::stoi(options["camid"]));
-				vc.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
-				vc.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
-			}
+        std::string videoname;
+        cv::VideoCapture vc;
+        if (options.count("camid") > 0){
+            vc = cv::VideoCapture(std::stoi(options["camid"]));
+            vc.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
+            vc.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
+        }
 
-			else if (options.count("video") > 0)
-				vc = cv::VideoCapture(options["video"]);
+        else if (options.count("video") > 0)
+            vc = cv::VideoCapture(options["video"]);
 
-			else{
-				throw(std::runtime_error("SIGNFINDER ERROR :: No video source has been specified.\n"));
-			}
+        else{
+            throw(std::runtime_error("SIGNFINDER ERROR :: No video source has been specified.\n"));
+        }
 
-			bool dumpPatches = false;
-			bool saveFrames = false;
-			std::string patchPrefix;
-			if (options.count("dump") > 0){
-				dumpPatches = true;
-				patchPrefix = options["dump"];
-			}
+        bool dumpPatches = false;
+        bool saveFrames = false;
+        std::string patchPrefix;
+        if (options.count("dump") > 0){
+            dumpPatches = true;
+            patchPrefix = options["dump"];
+        }
 
-			if (options.count("save") > 0)
-				saveFrames = true;
+        if (options.count("save") > 0)
+            saveFrames = true;
 
-			if (vc.isOpened()){
-				cv::Mat frame;
-				int keypress;
-				int frameno = 0;
-				double fps = 0;
-				while (vc.read(frame)){
+        if (vc.isOpened()){
+            cv::Mat frame;
+            int keypress;
+            int frameno = 0;
+            time_t start, end;
+            while (vc.read(frame)){
+                //measure delta_T
+                time(&start);
+                auto result = detector.detect(frame);
+                time(&end);
+                double fps = 1.0 / difftime(end, start);
+                ++frameno;
 
-					++frameno;
+                if (dumpPatches)
+                    detector.dumpStage1(patchPrefix);
+                putText(detector.currFrame, "FPS: " + std::to_string(fps), cv::Point(100, detector.currFrame.size().height - 100), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 255, 0));
 
-					auto result = detector.detect(frame, fps);
-					if (dumpPatches)
-						detector.dumpStage1(patchPrefix);
-					putText(detector.currFrame, "FPS: " + std::to_string(fps), cv::Point(100, detector.currFrame.size().height - 100), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 255, 0));
+                //plotting ROIs and confidence values
+                for (const auto& res : result)
+                {
+                    cv::rectangle(detector.currFrame, res.roi, cv::Scalar(0, 0, 255), 2);
+                    //write confidence and size 
+                    putText(detector.currFrame, "p=" + std::to_string(res.confidence), res.roi.br(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
+                    putText(detector.currFrame, std::to_string(res.roi.width) + "x" + std::to_string(res.roi.height), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
+                }
+                cv::imshow("Detection", detector.currFrame);
+                if (saveFrames)
+                    cv::imwrite(std::string("frame_" + std::to_string(frameno) + ".png"), detector.currFrame);
+                keypress = cv::waitKey(1);
 
-					//plotting ROIs and confidence values
-					for (const auto& res : result)
-					{
-						cv::rectangle(detector.currFrame, res.roi, cv::Scalar(0, 0, 255), 2);
-						//write confidence and size 
-						putText(detector.currFrame, "p=" + std::to_string(res.confidence), res.roi.br(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
-						putText(detector.currFrame, std::to_string(res.roi.width) + "x" + std::to_string(res.roi.height), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
-					}
-					cv::imshow("Detection", detector.currFrame);
-					if (saveFrames)
-						cv::imwrite(std::string("frame_" + std::to_string(frameno) + ".png"), detector.currFrame);
-					keypress = cv::waitKey(1);
+                if (keypress == 27) //exit on escape
+                    break;
+            }
+        }
+        else
+            throw(std::runtime_error("SIGNFINDER ERROR :: Unable to load video file.\n"));
+    }
 
-					if (keypress == 27) //exit on escape
-						break;
-				}
-			}
-			else
-				throw(std::runtime_error("SIGNFINDER ERROR :: Unable to load video file.\n"));
-		}
-
-		catch (std::exception& e){
-			std::cout << e.what() << '\n';
-		}
-	}
+    catch (std::exception& e){
+        std::cout << e.what() << '\n';
+#ifndef NDEBUG_
+        throw;  //for memory dump in debug mode.
+#endif
+    }
+    return EXIT_SUCCESS;
+    
 }
 

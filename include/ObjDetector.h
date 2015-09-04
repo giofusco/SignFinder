@@ -42,7 +42,6 @@ public:
 	ObjDetector(std::string resourceLocation) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
 	~ObjDetector();
 	std::vector<DetectionInfo> detect(cv::Mat& frame);	///< performs object detection on the frame in input.
-	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS);	///< performs object detection on the frame in input and returns the frame rate.
 	
 	inline void init(std::string yamlConfigFile) 
 		throw (std::runtime_error) ///< initializes the parameters using the file in input. 
@@ -55,6 +54,8 @@ public:
 	cv::Mat currFrame; ///< last processed frame
 
 private:
+    ObjDetector(const ObjDetector&) = delete;
+    ObjDetector& operator=(const ObjDetector&) = delete;
 	void init() throw (std::runtime_error);	///< initializes the classifiers
 	std::vector<ObjDetector::DetectionInfo> verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois); ///< Filters candidate ROIs using SVM
 
@@ -67,11 +68,7 @@ private:
 	std::vector<cv::Rect> rois_;
 	std::vector<ObjDetector::DetectionInfo> result_;
 
-	time_t start_;
-	time_t end_;
-	int counter_;
-	double sec_;
-	double fps_;
+    int counter_;
 };
 
 #endif

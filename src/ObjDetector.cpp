@@ -38,13 +38,16 @@ init_(false)
 
 ObjDetector::~ObjDetector()
 {
+    if (model_)
+        delete model_;
 }
 
 /*!
 * initializes the classifiers and the HOG feature extractor.
 * \exception std::runtime_error error loading one of the classfiers
 */
-void ObjDetector::init()throw(std::runtime_error){
+void ObjDetector::init() throw(std::runtime_error){
+    init_ = false;
 	counter_ = 0;
 	if (!cascade_.load(params_.cascadeFileName))
 		throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load cascade classifier." + params_.cascadeFileName));
@@ -57,39 +60,15 @@ void ObjDetector::init()throw(std::runtime_error){
 	hog_.nlevels = 1;
 
 	//setting up SVM, free previously allocated classifier if any
-	if (init_)
-		delete(model_);
+	if (model_)
+        delete(model_);
 	model_ = svm_load_model(params_.svmModelFileName.c_str());
 	if (model_ == NULL)
+    {
 		throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load SVM classifier.\n"));
+    }
 	init_ = true;
 }
-
-
-
-/*!
-* Use 2-Stages object detector on the input frame.
-* @param[in] frame
-* @param[out] FPS 
-* \return a vector of DetectionInfo containing information about the detections and the frame rate
-*/
-std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, double& FPS){
-	
-	
-	//measure delta_T
-	if (counter_ == 0)
-		time(&start_);
-	std::vector<ObjDetector::DetectionInfo> result = detect(frame);
-
-	time(&end_);
-	counter_++;
-	sec_ = difftime(end_, start_);
-	fps_ = counter_ / sec_;
-	FPS = fps_;
-	return result;
-}
-
-
 
 /*!
 * Use 2-Stages object detector on the input frame.
@@ -130,6 +109,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame){
 
         result_ = verifyROIs(cropped, rois_);
 	}
+    ++counter_;
     return result_;
 }
 
