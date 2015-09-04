@@ -39,8 +39,7 @@ public:
 	   ///< It contains the ROI in the image where the detection occurred and the corresponging confidence value (SVM likelihood) assigned by the second stage classifier
 
     ObjDetector();	///< basic constructor. The parameters are not initialized.
-	ObjDetector(std::string yamlConfigFile) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
-	ObjDetector(std::string yamlConfigFile, std::string classifiersFolder) throw(std::runtime_error); ///< constructor. The parameters are inizialized using the file passed in input and the specified classifiers folder.
+	ObjDetector(std::string resourceLocation) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
 	~ObjDetector();
 	std::vector<DetectionInfo> detect(cv::Mat& frame);	///< performs object detection on the frame in input.
 	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS);	///< performs object detection on the frame in input and returns the frame rate.

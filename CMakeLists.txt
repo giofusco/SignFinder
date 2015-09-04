@@ -24,10 +24,11 @@ endif()
 
 
 #Find LibSVM
-set(LIBSVM_LIBRARY "")
+set(LIBSVM_LIBRARY)
+message(STATUS "LIBSVM_ROOT_DIR = ${LIBSVM_ROOT_DIR}")
 find_package(LibSVM)
 if (LIBSVM_FOUND)
-  message(STATUS "LibSVM Found")
+  message(STATUS "LibSVM v${LIBSVM_VERSION_STRING} found")
   message(STATUS "LibSVM_LIBRARIES = ${LIBSVM_LIBRARIES}")
   message(STATUS "LibSVM_INCLUDE_DIRS = ${LIBSVM_INCLUDE_DIRS}")
   include_directories(${LIBSVM_INCLUDE_DIRS})

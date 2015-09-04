@@ -34,18 +34,16 @@ class DetectionParams
 {
 public:
 	DetectionParams();
-	DetectionParams(std::string yamlConfigFile) throw (std::runtime_error);
-	DetectionParams(std::string yamlConfigFile, std::string classifiersFolder) throw (std::runtime_error);
+	DetectionParams(std::string resourceLocation) throw (std::runtime_error);
 	~DetectionParams();
 
-	void loadFromFile(std::string yamlConfigFile) throw(std::runtime_error);
-	void loadFromFile(std::string yamlConfigFile, std::string classifiersFolder) throw(std::runtime_error);
+	void loadFromFile(std::string resourceLocation) throw(std::runtime_error);
 	inline bool isInit() { return init_; }
 
 	std::string classifiersFolder; ///< base directory containing the Adaboost and the SVM classifier
-	std::string configFileName;	///< full path to the configuration file
-	std::string cascadeFile;	///< Adaboost cascade classifier filename
-	std::string svmModelFile;	///< SVM model filename
+	std::string configFileName;     ///< full path to the configuration file
+	std::string cascadeFileName;	///< Adaboost cascade classifier filename
+	std::string svmModelFileName;	///< SVM model filename
 
 	cv::Size hogWinSize;		///< windows size for HOG descriptor
 	cv::Size cascadeMinWin;		///< min window size for multi-scale detection

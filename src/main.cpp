@@ -30,8 +30,8 @@ std::map<std::string, std::string> parseOptions(int argc, char* argv[]){
 	while (o < argc){
 		opt = argv[o];
 
-		if (opt == "-config"){
-			options.insert(std::make_pair("config", argv[o + 1]));
+		if (opt == "-res"){
+			options.insert(std::make_pair("res", argv[o + 1]));
 		}
 		else if (opt == "-video"){
 			options.insert(std::make_pair("video", argv[o + 1]));
@@ -57,7 +57,7 @@ std::map<std::string, std::string> parseOptions(int argc, char* argv[]){
 int main(int argc, char* argv[]){
 
 	if (argc < 3)
-		std::cout << "Not enough input parameters. USAGE: signFinder -config ParametersFile  ( -video videoFile | -camid webcamID ) [-dump prefix_dumped_patches] [-save] \n";
+		std::cout << "Not enough input parameters. USAGE: SignFinder -res resourceLocation  ( -video videoFile | -camid webcamID ) [-dump prefix_dumped_patches] [-save] \n";
 	else{
 
 		std::map<std::string, std::string> options = parseOptions(argc, argv);
@@ -69,8 +69,8 @@ int main(int argc, char* argv[]){
 			// ObjDetector detector(argv[1], basedir);
 			//****
 
-			std::cerr << options["config"] << "\n";
-			ObjDetector detector(options["config"]);
+			std::cerr << options["res"] << "\n";
+			ObjDetector detector(options["res"]);
 
 			std::string videoname;
 			cv::VideoCapture vc;

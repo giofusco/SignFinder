@@ -19,29 +19,25 @@ Author: Giovanni Fusco - giofusco@ski.org
 
 #include "ObjDetector.h"
 
-ObjDetector::ObjDetector()
+ObjDetector::ObjDetector():
+params_(),
+init_(false)
 {
-	params_ = DetectionParams();
-	init_ = false;
 }
 
 
-ObjDetector::ObjDetector(std::string yamlConfigFile) throw(std::runtime_error) : ObjDetector(){
-	params_.loadFromFile(yamlConfigFile);
+ObjDetector::ObjDetector(std::string resourceLocation) throw(std::runtime_error):
+params_(resourceLocation),
+init_(false)
+{
 	init();
 	
 }
 
-ObjDetector::ObjDetector(std::string yamlConfigFile, std::string classifiersFolder) throw(std::runtime_error) : ObjDetector(){
-	params_.loadFromFile(yamlConfigFile, classifiersFolder);
-	init();
-}
-
-void setClassifiersFolder(std::string folder);
+//void setClassifiersFolder(std::string folder);
 
 ObjDetector::~ObjDetector()
 {
-
 }
 
 /*!
@@ -50,8 +46,8 @@ ObjDetector::~ObjDetector()
 */
 void ObjDetector::init()throw(std::runtime_error){
 	counter_ = 0;
-	if (!cascade_.load(params_.cascadeFile))
-		throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load cascade classifier.\n"));
+	if (!cascade_.load(params_.cascadeFileName))
+		throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load cascade classifier." + params_.cascadeFileName));
 
 	//setting up HOG descriptor
 	hog_.winSize = params_.hogWinSize;
@@ -63,7 +59,7 @@ void ObjDetector::init()throw(std::runtime_error){
 	//setting up SVM, free previously allocated classifier if any
 	if (init_)
 		delete(model_);
-	model_ = svm_load_model(params_.svmModelFile.c_str());
+	model_ = svm_load_model(params_.svmModelFileName.c_str());
 	if (model_ == NULL)
 		throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load SVM classifier.\n"));
 	init_ = true;

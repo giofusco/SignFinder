@@ -55,7 +55,6 @@ find_path ( LIBSVM_INCLUDE_DIR
     ${LIBSVM_ROOT_DIR}/include
   PATH_SUFFIXES
     libsvm
-    libsvm-2.0/libsvm
   DOC
     "LibSVM include directory"
 )
@@ -94,11 +93,16 @@ if ( LibSVM_FIND_VERSION AND LIBSVM_VERSION_STRING )
 endif ()
 
 # set LIBSVM_LIBRARY
+#set(CMAKE_FIND_LIBRARY_PREFIXES lib)
+#set(CMAKE_FIND_LIBRARY_SUFFIXES .dylib)
+
 find_library ( LIBSVM_LIBRARY
   NAMES
     svm
   PATHS
-    ${LIBSVM_ROOT_DIR}/lib
+    ${LIBSVM_ROOT_DIR}
+  PATH_SUFFIXES
+    lib
   DOC
     "LibSVM library location"
 )
