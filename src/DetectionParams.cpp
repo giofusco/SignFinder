@@ -23,9 +23,9 @@ Author: Giovanni Fusco - giofusco@ski.org
 * Basic constructor. The state will not be valid,
 * unless loadFromFile is successively called.
 */
-DetectionParams::DetectionParams()
+DetectionParams::DetectionParams():
+init_(false)
 {
-	init_ = false;
 }
 
 
@@ -34,9 +34,9 @@ DetectionParams::DetectionParams()
 * @param[in] yamlConfigFile the full path to the configuration file to parse
 * \exception std::runtime_error error accessing or parsing the configuration file
 */
-DetectionParams::DetectionParams(std::string resourceLocation) throw(std::runtime_error){
-
-	DetectionParams();
+DetectionParams::DetectionParams(std::string resourceLocation) throw(std::runtime_error):
+DetectionParams()
+{
 	loadFromFile(resourceLocation);
 }
 

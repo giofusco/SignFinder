@@ -38,37 +38,37 @@ public:
     }; ///< Structure containing detection information.
 	   ///< It contains the ROI in the image where the detection occurred and the corresponging confidence value (SVM likelihood) assigned by the second stage classifier
 
-    ObjDetector();	///< basic constructor. The parameters are not initialized.
 	ObjDetector(std::string resourceLocation) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
 	~ObjDetector();
 	std::vector<DetectionInfo> detect(cv::Mat& frame);	///< performs object detection on the frame in input.
 	
-	inline void init(std::string yamlConfigFile) 
-		throw (std::runtime_error) ///< initializes the parameters using the file in input. 
-		{ params_.loadFromFile(yamlConfigFile);
-		  init();
-		};
-	
-	void dumpStage1(std::string prefix); ///< saves ROIs coming from the first stage to disk
+    //void dumpStage1(std::string prefix) const; ///< saves ROIs coming from the first stage to disk
 	//void dumpStage2(); ///< saves verified ROIs to disk
-	cv::Mat currFrame; ///< last processed frame
+    //cv::Mat currFrame; ///< last processed frame
 
+    bool isInit() const {return init_; }
+    
+#ifndef NDEBUG
+    inline const std::vector<cv::Rect>& getFirstStageResults() const
+    {
+        return rois_;
+    }
+#endif
 private:
     ObjDetector(const ObjDetector&) = delete;
     ObjDetector& operator=(const ObjDetector&) = delete;
-	void init() throw (std::runtime_error);	///< initializes the classifiers
-	std::vector<ObjDetector::DetectionInfo> verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois); ///< Filters candidate ROIs using SVM
+	std::vector<ObjDetector::DetectionInfo> verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois) const throw (std::runtime_error); ///< Filters candidate ROIs using SVM
 
-	DetectionParams params_;			///< parameters of the detector
-	cv::CascadeClassifier cascade_;		///< cascade classifier
-	cv::HOGDescriptor hog_;				///< hog feature extractor
-	struct svm_model* model_;			///< svm classifier
+	const DetectionParams params_;			///< parameters of the detector
+	mutable cv::CascadeClassifier cascade_;		///< cascade classifier
+	const cv::HOGDescriptor hog_;				///< hog feature extractor
+	const struct svm_model* model_;			///< svm classifier
 	bool init_;
 
 	std::vector<cv::Rect> rois_;
-	std::vector<ObjDetector::DetectionInfo> result_;
+    //std::vector<ObjDetector::DetectionInfo> result_;
 
-    int counter_;
+    mutable int counter_;
 };
 
 #endif

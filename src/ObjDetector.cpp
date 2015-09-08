@@ -19,19 +19,38 @@ Author: Giovanni Fusco - giofusco@ski.org
 
 #include "ObjDetector.h"
 
-ObjDetector::ObjDetector():
-params_(),
-init_(false)
-{
-}
-
 
 ObjDetector::ObjDetector(std::string resourceLocation) throw(std::runtime_error):
 params_(resourceLocation),
-init_(false)
+cascade_(params_.cascadeFileName),
+hog_(params_.hogWinSize,    //winSize
+     cv::Size(16,16),       //blockSize
+     cv::Size(4,4),         //blockSize
+     cv::Size(8,8),         //cellSize
+     9,                     //nbins
+     1,                     //derivAperture
+     -1,                    //winSigma,
+     cv::HOGDescriptor::L2Hys,  //hostogramNormType,
+     .2,                    //L2HysThreshold,
+     true,                  //gammaCorrection
+     1                      //nLevels
+     ),
+model_(svm_load_model(params_.svmModelFileName.c_str())),
+init_(false),
+counter_(0)
 {
-	init();
-	
+    //check for problems
+    
+    if (!params_.isInit())
+        throw std::runtime_error("OBJDETECTOR ERROR :: Could not initialize parameters.");
+    if (cascade_.empty())
+        throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load cascade classifier." + params_.cascadeFileName));
+    
+    if (model_ == nullptr)
+    {
+        throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load SVM classifier.\n"));
+    }
+    init_ = true;
 }
 
 //void setClassifiersFolder(std::string folder);
@@ -43,83 +62,59 @@ ObjDetector::~ObjDetector()
 }
 
 /*!
-* initializes the classifiers and the HOG feature extractor.
-* \exception std::runtime_error error loading one of the classfiers
-*/
-void ObjDetector::init() throw(std::runtime_error){
-    init_ = false;
-	counter_ = 0;
-	if (!cascade_.load(params_.cascadeFileName))
-		throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load cascade classifier." + params_.cascadeFileName));
-
-	//setting up HOG descriptor
-	hog_.winSize = params_.hogWinSize;
-	//default OpenCV HOG params 
-	hog_.blockStride = cv::Size(4, 4);
-	hog_.cellSize = cv::Size(8, 8);
-	hog_.nlevels = 1;
-
-	//setting up SVM, free previously allocated classifier if any
-	if (model_)
-        delete(model_);
-	model_ = svm_load_model(params_.svmModelFileName.c_str());
-	if (model_ == NULL)
-    {
-		throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load SVM classifier.\n"));
-    }
-	init_ = true;
-}
-
-/*!
 * Use 2-Stages object detector on the input frame.
 * @param[in] frame
 * \return a vector of DetectionInfo containing information about the detections 
 */
 std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame){
 
-	result_.clear();
-	if (params_.isInit()){
-		if (params_.scalingFactor != 1 && params_.scalingFactor > 0)
-			resize(frame, frame, cv::Size(frame.size().width * params_.scalingFactor, frame.size().height* params_.scalingFactor));
+    if (!isInit())
+    {
+        throw std::runtime_error("OBJDETECTOR ERROR :: Could not initialize object detector");
+    }
+    
+    std::vector<DetectionInfo> result;
+    
+    if (params_.scalingFactor != 1 && params_.scalingFactor > 0)
+        resize(frame, frame, cv::Size(frame.size().width * params_.scalingFactor, frame.size().height* params_.scalingFactor));
 
-		if (params_.flip)
-			flip(frame, frame, 0);
+    if (params_.flip)
+        flip(frame, frame, 0);
 
-        if (params_.transpose)      
-			frame = frame.t();
-        
-        frame.copyTo(currFrame);
-        //cropping
-        cv::Mat cropped;
-        frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().height*params_.croppingFactors[1])).copyTo(cropped);
+    if (params_.transpose)      
+        frame = frame.t();
+    
+    //frame.copyTo(currFrame);
+    //cropping
+    cv::Mat cropped;
+    frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().height*params_.croppingFactors[1])).copyTo(cropped);
 
-		rois_.clear();
-        cascade_.detectMultiScale(cropped, rois_, params_.cascadeScaleFactor, 0, 0, params_.cascadeMinWin, params_.cascadeMaxWin);
-		groupRectangles(rois_, 1);
+    rois_.clear();
+    cascade_.detectMultiScale(cropped, rois_, params_.cascadeScaleFactor, 0, 0, params_.cascadeMinWin, params_.cascadeMaxWin);
+    groupRectangles(rois_, 1);
 
-		if (params_.showIntermediate){
-			cv::imshow("Cropped Input", cropped);
-			cv::Mat tmp;
-			cropped.copyTo(tmp); // temporary copy to avoid changing pixels in the original image
-			for (const auto& r : rois_){
-				cv::rectangle(tmp, r, cv::Scalar(0, 255, 0), 2);
-			}
-			cv::imshow("Stage 1", tmp);
-		}
+    if (params_.showIntermediate){
+        cv::imshow("Cropped Input", cropped);
+        cv::Mat tmp;
+        cropped.copyTo(tmp); // temporary copy to avoid changing pixels in the original image
+        for (const auto& r : rois_){
+            cv::rectangle(tmp, r, cv::Scalar(0, 255, 0), 2);
+        }
+        cv::imshow("Stage 1", tmp);
+    }
 
-        result_ = verifyROIs(cropped, rois_);
-	}
     ++counter_;
-    return result_;
+    return verifyROIs(cropped, rois_);
 }
 
 /*!
 * Verifies the ROIs detected in the first stage using SVM + HOG
 * @param[in] frame frame to process
 * @param[in] rois vector containing the candidate ROIs
-* \return a vector of detections that passed the verification
+* @return a vector of detections that passed the verification
+* @throw runtime error if unable to allocate memory for this stage
 */
-std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois){
+std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois) const throw (std::runtime_error) {
 
 	std::vector<ObjDetector::DetectionInfo> result;
 	double prob_est[2];
@@ -134,8 +129,12 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, 
 		resize(patch, patch, params_.hogWinSize);
 		hog_.compute(patch, desc);
 
-		svm_node *x;
+		svm_node *x = nullptr;
 		x = (struct svm_node *)malloc((desc.size() + 1)*sizeof(struct svm_node));
+        if (x == nullptr)
+        {
+            throw std::runtime_error("Unable to allocate memory for SVM");
+        }
 
 		for (int d = 0; d<desc.size(); d++){
 			x[d].index = d + 1;  // Index starts from 1; Pre-computed kernel starts from 0
@@ -155,16 +154,5 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, 
 			result.push_back({ rois[r], prob_est[0] });
 	}
 
-
 	return result;
-}
-
-void ObjDetector::dumpStage1(std::string prefix){
-	int cnt = 0;
-	for (const auto& r : rois_){
-		cnt++;
-		cv::Mat p = currFrame(r);
-		std::string fname = prefix+ "_" + std::to_string(counter_) + "_" + std::to_string(cnt) + ".png";
-		cv::imwrite(fname, p);
-	}
 }

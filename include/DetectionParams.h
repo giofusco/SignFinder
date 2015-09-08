@@ -38,7 +38,7 @@ public:
 	~DetectionParams();
 
 	void loadFromFile(std::string resourceLocation) throw(std::runtime_error);
-	inline bool isInit() { return init_; }
+	inline bool isInit() const { return init_; }
 
 	std::string classifiersFolder; ///< base directory containing the Adaboost and the SVM classifier
 	std::string configFileName;     ///< full path to the configuration file
