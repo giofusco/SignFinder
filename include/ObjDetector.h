@@ -56,6 +56,9 @@ public:
 	cv::Mat currFrame; ///< last processed frame
 
 private:
+
+	ObjDetector(const ObjDetector& that) = delete; //disable copy constructor
+
 	void init() throw (std::runtime_error);	///< initializes the classifiers
 	std::vector<ObjDetector::DetectionInfo> verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois); ///< Filters candidate ROIs using SVM
 

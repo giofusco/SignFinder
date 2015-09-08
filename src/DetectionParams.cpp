@@ -34,9 +34,8 @@ DetectionParams::DetectionParams()
 * @param[in] yamlConfigFile the full path to the configuration file to parse
 * \exception std::runtime_error error accessing or parsing the configuration file
 */
-DetectionParams::DetectionParams(std::string yamlConfigFile, std::string classifiersFolder) throw(std::runtime_error){
+DetectionParams::DetectionParams(std::string yamlConfigFile, std::string classifiersFolder) throw(std::runtime_error) : DetectionParams() {
 
-	DetectionParams();
 	loadFromFile(yamlConfigFile, classifiersFolder);
 }
 

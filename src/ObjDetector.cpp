@@ -41,7 +41,8 @@ void setClassifiersFolder(std::string folder);
 
 ObjDetector::~ObjDetector()
 {
-
+	if (init_)
+		delete(model_);
 }
 
 /*!
@@ -66,7 +67,8 @@ void ObjDetector::init()throw(std::runtime_error){
 	model_ = svm_load_model(params_.svmModelFile.c_str());
 	if (model_ == NULL)
 		throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load SVM classifier.\n"));
-	init_ = true;
+	else 
+		init_ = true;
 }
 
 
