@@ -33,4 +33,4 @@ Flip: 1                    # flip input frames  (used for portrait vs landscape 
 Transpose: 1               # transpose input frames (used for portrait vs landscape videos)
 
 # Debug options
-ShowIntermediate: 1
+ShowIntermediate: 0

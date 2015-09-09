@@ -121,6 +121,14 @@ int main(int argc, char* argv[]){
 						detector.dumpStage1(patchPrefix);
 					putText(detector.currFrame, "FPS: " + std::to_string(fps), cv::Point(100, detector.currFrame.size().height - 100), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 255, 0));
 
+					std::vector<cv::Rect> stage1rois = detector.getStage1Rois();
+					for (const auto& res : stage1rois)
+					{
+						cv::rectangle(detector.currFrame, res, cv::Scalar(255, 0, 0), 2);
+						//write confidence and size 
+						putText(detector.currFrame, std::to_string(res.width) + "x" + std::to_string(res.height), res.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 0,0));
+					}
+
 					//plotting ROIs and confidence values
 					for (const auto& res : result)
 					{

@@ -44,7 +44,7 @@ public:
 	~ObjDetector();
 	std::vector<DetectionInfo> detect(cv::Mat& frame);	///< performs object detection on the frame in input.
 	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS);	///< performs object detection on the frame in input and returns the frame rate.
-	
+	inline std::vector<cv::Rect> getStage1Rois(){ return rois_;}
 	inline void init(std::string yamlConfigFile) 
 		throw (std::runtime_error) ///< initializes the parameters using the file in input. 
 		{ params_.loadFromFile(yamlConfigFile);
