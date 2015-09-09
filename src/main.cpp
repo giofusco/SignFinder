@@ -108,12 +108,12 @@ int main(int argc, char* argv[]){
 					++frameno;
 					
 					if (frame.size().width > frame.size().height){
-						float r = frame.size().height / frame.size().width;
-						cv::resize(frame, frame, cv::Size(640, r*640));
+						float r = frame.size().height / float(frame.size().width);
+						cv::resize(frame, frame, cv::Size(640, floor(r*640)));
 					}
 					else{
-						float r = frame.size().width / frame.size().height;
-						cv::resize(frame, frame, cv::Size(r*640, 640));
+						float r = frame.size().width / float(frame.size().height);
+						cv::resize(frame, frame, cv::Size(floor(r*640), 640));
 					}
 
 					auto result = detector.detect(frame, fps);
