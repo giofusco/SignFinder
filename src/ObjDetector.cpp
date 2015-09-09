@@ -120,6 +120,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, 
 	double prob_est[2];
 	std::vector<float> desc;
 
+    std::vector<svm_node> x;
 
 	for (int r = 0; r < rois.size(); r++){
 		//use svm to classify the rois
@@ -128,15 +129,10 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, 
 		cv::Mat res(1, 1, CV_32FC1);
 		resize(patch, patch, params_.hogWinSize);
 		hog_.compute(patch, desc);
+        x.resize(desc.size() + 1);
 
-		svm_node *x = nullptr;
-		x = (struct svm_node *)malloc((desc.size() + 1)*sizeof(struct svm_node));
-        if (x == nullptr)
-        {
-            throw std::runtime_error("Unable to allocate memory for SVM");
-        }
-
-		for (int d = 0; d<desc.size(); d++){
+        //TODO: This is done for each patch. If descriptor sizes are the same, this can be optimized by moving out of the loop.
+		for (int d = 0; d < desc.size(); d++){
 			x[d].index = d + 1;  // Index starts from 1; Pre-computed kernel starts from 0
 			x[d].value = desc[d];
 		}
@@ -146,9 +142,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, 
 		res.release();
 		desc.clear();
 
-		svm_predict_probability(model_, x, prob_est);
-
-		delete(x);
+		svm_predict_probability(model_, x.data(), prob_est);
 
 		if ((prob_est[0] > params_.SVMThreshold))
 			result.push_back({ rois[r], prob_est[0] });

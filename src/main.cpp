@@ -20,7 +20,7 @@ Author: Giovanni Fusco - giofusco@ski.org
 
 #include "ObjDetector.h"
 #include <exception>
-
+#include <chrono>
 
 namespace
 {
@@ -60,6 +60,19 @@ namespace
             cv::imwrite(fname, p);
         }
     }
+
+    template<typename TimeT = std::chrono::milliseconds>
+    struct measure
+    {
+        template<typename F, typename ...Args>
+        static typename TimeT::rep execution(F&& func, Args&&... args)
+        {
+            auto start = std::chrono::system_clock::now();
+            std::forward<decltype(func)>(func)(std::forward<Args>(args)...);
+            auto duration = std::chrono::duration_cast< TimeT>(std::chrono::system_clock::now() - start);
+            return duration.count();
+        }
+    };
 }
 
 
@@ -115,13 +128,12 @@ int main(int argc, char* argv[]){
             cv::Mat frame;
             int keypress;
             int frameno = 0;
-            time_t start, end;
             while (vc.read(frame)){
                 //measure delta_T
-                time(&start);
+                auto start = std::chrono::system_clock::now();
                 auto result = pDetector->detect(frame);
-                time(&end);
-                double fps = 1.0 / difftime(end, start);
+                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start);
+                double fps = 1000.0 / duration.count();
                 ++frameno;
 
                 if (dumpPatches)

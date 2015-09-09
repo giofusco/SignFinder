@@ -16,7 +16,7 @@ limitations under the License.
 #ifndef OBJ_DETECTOR_H
 #define OBJ_DETECTOR_H
 
-#include <time.h> 
+//#include <time.h>
 #include <limits.h>
 #include "DetectionParams.h"
 #include "svm.h"
@@ -62,7 +62,7 @@ private:
 	const DetectionParams params_;			///< parameters of the detector
 	mutable cv::CascadeClassifier cascade_;		///< cascade classifier
 	const cv::HOGDescriptor hog_;				///< hog feature extractor
-	const struct svm_model* model_;			///< svm classifier
+	const svm_model* model_;			///< svm classifier
 	bool init_;
 
 	std::vector<cv::Rect> rois_;
