@@ -13,7 +13,7 @@ minWinSize:
     height: 18
 CascadeScaleFactor: 1.2    # scale factor for multiscale detection 
 
-maxWinSizeFactor: 6.       #specify largest search window as a multiple of minWinSize
+maxWinSizeFactor: 10.       #specify largest search window as a multiple of minWinSize
 
 # HOG
 HOG_winSize:               # DO NOT CHANGE: this parameter should be changed only if the SVM is trained with a different window size 
@@ -27,7 +27,7 @@ CroppingFactors:           # specify which section of the image to process. Crop
     width: 1.0
     height: 0.66
 
-ScaleFactor: 0.6          # specify rescaling factor for cropped frames (helps with detection of small objects)
+ScaleFactor: 1.          # specify rescaling factor for cropped frames (helps with detection of small objects)
 
 Flip: 1                    # flip input frames  (used for portrait vs landscape videos)
 Transpose: 1               # transpose input frames (used for portrait vs landscape videos)
