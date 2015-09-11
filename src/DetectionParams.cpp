@@ -182,7 +182,7 @@ void DetectionParams::loadFromFile(std::string yamlConfigFile, std::string class
 			if (!n.empty())
 				cascadeScaleFactor = (float)n[0];
 			else
-				scalingFactor = 1.1;
+				cascadeScaleFactor = 1.1;
 
 			n = fs["SVMThreshold"];
 			if (!n.empty())
