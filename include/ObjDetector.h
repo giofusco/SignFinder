@@ -16,10 +16,10 @@ limitations under the License.
 #ifndef OBJ_DETECTOR_H
 #define OBJ_DETECTOR_H
 
-//#include <time.h>
 #include <limits.h>
 #include "DetectionParams.h"
 #include "svm.h"
+#include <memory>
 
 /** \class ObjDetector
 *  \brief Two-stages object detector.
@@ -31,23 +31,46 @@ limitations under the License.
 class ObjDetector
 {
 public:
-    struct DetectionInfo	
+    /// Structure containing detection information.
+    /// It contains the ROI in the image where the detection occurred and the corresponging confidence value (SVM likelihood) assigned by the second stage classifier
+    struct DetectionInfo
     {
         cv::Rect roi;
         double confidence;
-    }; ///< Structure containing detection information.
-	   ///< It contains the ROI in the image where the detection occurred and the corresponging confidence value (SVM likelihood) assigned by the second stage classifier
+    };
 
-	ObjDetector(std::string resourceLocation) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
-	~ObjDetector();
-	std::vector<DetectionInfo> detect(cv::Mat& frame);	///< performs object detection on the frame in input.
-	
-    //void dumpStage1(std::string prefix) const; ///< saves ROIs coming from the first stage to disk
-	//void dumpStage2(); ///< saves verified ROIs to disk
-    //cv::Mat currFrame; ///< last processed frame
+    /// Parameters for the object detector
+    struct Parameters
+    {
+        std::string cascadeFileName;	///< Adaboost cascade classifier filename
+        std::string svmModelFileName;	///< SVM model filename
+        
+        cv::Size hogWinSize;		///< windows size for HOG descriptor
+        cv::Size cascadeMinWin;		///< min window size for multi-scale detection
+        cv::Size cascadeMaxWin;		///< max window size for multi-scale detection
+        
+        //float cascadeMaxWinFactor;
+        //float croppingFactors[2];	///< (0: width, 1: height)
+        //float scalingFactor;		///< image rescaling factor (0., +inf)
+        float cascadeScaleFactor;	///< multiscale detection scaling factor
+        float SVMThreshold;			///< theshold for rejection of candidate ROIs
+        
+        Parameters();
+    };
 
-    bool isInit() const {return init_; }
+    typedef std::unique_ptr<ObjDetector> Ptr;
+    static Ptr Create(const Parameters& params) throw (std::runtime_error);
     
+    /// Dtor
+	~ObjDetector();
+    
+    /*!
+     * Use 2-Stage object detector on the input frame.
+     * @param[in] frame
+     * @return a vector of DetectionInfo containing information about the verified detections
+     */
+	std::vector<DetectionInfo> detect(cv::Mat& frame);
+	
 #ifndef NDEBUG
     inline const std::vector<cv::Rect>& getFirstStageResults() const
     {
@@ -55,20 +78,29 @@ public:
     }
 #endif
 private:
+    /// Default Ctor
+    ObjDetector() noexcept;
+//    ObjDetector(std::string resourceLocation) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
+
+    /// Delete copy ctor and assignment operator
     ObjDetector(const ObjDetector&) = delete;
     ObjDetector& operator=(const ObjDetector&) = delete;
-	std::vector<ObjDetector::DetectionInfo> verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois) const throw (std::runtime_error); ///< Filters candidate ROIs using SVM
+    
+    class CascadeDetector;  //< first stage detector, LBP + Adaboost cascade
+    class SVMDetector;      //< second stage detector, HoG + SVM
+    std::unique_ptr<CascadeDetector> pCascadeDetector;  //< ptr to first stage detector
+    std::unique_ptr<SVMDetector> pSVMDetector;          //< ptr to second stage detector
+    
+//    void getROIs(const cv::Mat& frame);
+//	std::vector<ObjDetector::DetectionInfo> verifyROIs(const cv::Mat& frame) const throw (std::runtime_error); ///< Filters candidate ROIs using SVM
+//
+//	const DetectionParams params_;			///< parameters of the detector
+//	mutable cv::CascadeClassifier cascade_;		///< cascade classifier, mutable since cv::CascadeClassifier::detectMultiScale is not const, but does not change internal state of ObjDetector
+//	const cv::HOGDescriptor hog_;				///< hog feature extractor
+//	const svm_model* model_;			///< svm classifier
+//
 
-	const DetectionParams params_;			///< parameters of the detector
-	mutable cv::CascadeClassifier cascade_;		///< cascade classifier
-	const cv::HOGDescriptor hog_;				///< hog feature extractor
-	const svm_model* model_;			///< svm classifier
-	bool init_;
-
-	std::vector<cv::Rect> rois_;
-    //std::vector<ObjDetector::DetectionInfo> result_;
-
-    mutable int counter_;
+    std::vector<cv::Rect> rois_;        //< rois detected by the first stage
 };
 
 #endif
