@@ -31,19 +31,12 @@ namespace
         ObjDetector::Parameters detectorParameters;
         // Input parameters
         std::string input;              ///< input file stream to process
+        std::string patchPrefix;        ///< if non-empty, dump patches to disk with this prefix
+        cv::Size size;                  ///< image size to use while processing. If aspect ratio differs, then the image is first cropped so the aspect ratio is not changed.
         bool isFlipped;					///< flip input image if true (used for landscape videos)
         bool isTransposed;				///< transpose input image if true (used for landscape videos)
         bool doShowIntermediate;        ///< show debugging info
-        bool doDumpPatches;             ///< if true, dump patches to disk
         bool doSaveFrames;              ///< if true, save frames to disk
-
-        Options():
-        isFlipped(false),
-        isTransposed(false),
-        doShowIntermediate(false),
-        doDumpPatches(false),
-        doSaveFrames(false)
-        {}
     };
     
     void loadDetectorParametersFromFile(const std::string& configFile, ObjDetector::Parameters& params)
@@ -200,12 +193,12 @@ namespace
             "{v | version         | false       | version info                                                  }"
             "{1 |                 |             | input. Either a file name, or a digit indicating webcam id    }"
             "{r | resources       |             | location of resource files                                    }"
-            "{d | dump_patches    | false       | whether to dump detected patches to disk                      }"
+            "{p | patchePrefix    |             | prefix for dumping detected patches to disk. If none, nothign is dumped}"
             "{s | save_frames     | false       | whether to save frames                                        }"
-            "{x | show_intermediate| false      | whether to show intermediate detection stage results          }"
+            "{d | debug           | false       | whether to show intermediate detection stage results          }"
             "{f | flip            | false       | whether to flip the input image                               }"
             "{t | transpose       | false       | whether to transpose the input image                          }"
-            "{c | crop            | 1,1         | ratio of the imahe to crop (w,h). 1,1 is the whole image.     }"
+            "{x | size            | 640x480     | size of the image to use while processing.                    }"
         };
         cv::CommandLineParser parser(argc, argv, keys);
         if (parser.get<bool>("h"))
@@ -238,14 +231,22 @@ namespace
         opts.detectorParameters.cascadeFileName = resourceLocation + "/" + "cascade.xml";
         opts.detectorParameters.svmModelFileName = resourceLocation + "/" + "model.svm";
         
-        opts.doDumpPatches = parser.get<bool>("d");
+        opts.patchPrefix = parser.get<std::string>("p");
         opts.doSaveFrames = parser.get<bool>("s");
-        opts.doShowIntermediate = parser.get<bool>("x");
+        opts.doShowIntermediate = parser.get<bool>("d");
         opts.isTransposed = parser.get<bool>("t");
         opts.isFlipped = parser.get<bool>("f");
         
-        const std::string cropping = parser.get<std::string>("c");
-#ifndef NDEBUG_
+        const std::string szString = parser.get<std::string>("x");
+        int n = szString.find('x');
+        if (n == std::string::npos)
+        {
+            throw std::runtime_error("Parser Error :: Unable tp parse size");
+        }
+        opts.size.width = std::stoi(szString.substr(0, n));
+        opts.size.height = std::stoi(szString.substr(n+1));
+        
+#ifndef NDEBUG
         //list arguments and parameters
         std::cerr << "Program parameters and arguments from the configuration file:" << std::endl;
         std::cerr << "\tInput: " << opts.input << std::endl;
@@ -253,24 +254,25 @@ namespace
         std::cerr << "\tCascade file: " << opts.detectorParameters.cascadeFileName << std::endl;
         std::cerr << "\tSVM model file: " << opts.detectorParameters.svmModelFileName << std::endl;
 
+        std::cerr << std::boolalpha;
         std::cerr << "Input file options:" << std::endl;
         std::cerr << "\tisFlipped: " << opts.isFlipped << std::endl;
         std::cerr << "\tisTransposed: " << opts.isTransposed << std::endl;
-        std::cerr << "\tcrop" << cropping;
+        std::cerr << "\tsize: " << opts.size << std::endl;
         
         std::cerr << "Debug options: " << std::endl;
+        std::cerr << "\tpatchPrefix: " << opts.patchPrefix << std::endl;
         std::cerr << "\tdoShowIntermediate: " << opts.doShowIntermediate << std::endl;
-        std::cerr << "\tdoDumpPatches: " << opts.doDumpPatches << std::endl;
         std::cerr << "\tdoSaveFrames: " << opts.doSaveFrames << std::endl;
 #endif
         
         loadDetectorParametersFromFile(configFileName, opts.detectorParameters);
         
-#ifndef NDEBUG_
+#ifndef NDEBUG
         std::cerr << "Cascade detector parameters: " << std::endl;
         std::cerr << "\tminWinSize: " << opts.detectorParameters.cascadeMinWin << std::endl;
         std::cerr << "\tmaxWinSize: " << opts.detectorParameters.cascadeMaxWin << std::endl;
-        std::cerr << "\tscaleFactor: " << opts.detectorParameters.cascadeScaleFactor;
+        std::cerr << "\tscaleFactor: " << opts.detectorParameters.cascadeScaleFactor << std::endl;
         
         std::cerr << "SVM parameters: " << std::endl;
         std::cerr << "\tHoGWinSize: " << opts.detectorParameters.hogWinSize << std::endl;
@@ -280,7 +282,7 @@ namespace
         
     }
 
-#ifndef NDEBUG_
+#ifndef NDEBUG
     void dumpStage1(const ObjDetector& detector, const cv::Mat& frame, const std::string& prefix) {
         int cnt = 0;
         for (const auto& r : detector.getFirstStageResults()){
@@ -292,101 +294,108 @@ namespace
     }
 #endif
     
+    inline std::string to_string(const cv::Size& sz)
+    {
+        return std::to_string(sz.width) + "x" + std::to_string(sz.height);
+    }
+
 }
 
-
-
-
-int main(int argc, char* argv[]){
-
-	if (argc < 3)
-    {
-		std::cout << "Not enough input parameters. USAGE: SignFinder -res resourceLocation  ( -video videoFile | -camid webcamID ) [-dump prefix_dumped_patches] [-save] \n";
-        return EXIT_FAILURE;
-    }
-
+int main(int argc, char* argv[])
+{
     auto options = parseOptions(argc, argv);
 
-    try{
+    auto pDetector = ObjDetector::Create(options.detectorParameters);
 
-        auto pDetector = ObjDetector::Create(options.detectorParameters);
-
-        std::string videoname;
-        cv::VideoCapture vc;
-        if (options.input.size() == 1) //camera
+    std::string videoname;
+    cv::VideoCapture vc;
+    if (options.input.size() == 1) //camera
+    {
+        const int camIndex = options.input.front() - '0';
+        if ( (camIndex < 0) || (camIndex > 9) )
         {
-            const char camIndex = options.input.front();
+            throw std::runtime_error("Parser Error :: Webcam index must be between 0..9");
         }
+        vc = cv::VideoCapture(camIndex);
+        if (!vc.isOpened())
+        {
+            throw std::runtime_error(std::string("Unable to open webcam ") + options.input);
+        }
+        vc.set(CV_CAP_PROP_FRAME_HEIGHT, options.size.height);
+        vc.set(CV_CAP_PROP_FRAME_WIDTH, options.size.width);
+    }
+    else
+    {
+        vc = cv::VideoCapture(options.input);
+        if (!vc.isOpened())
+        {
+            throw std::runtime_error(std::string("Unable to open video file ") + options.input);
+        }
+    }
+#ifndef NDEBUG
+    cv::Size openedStreamSize( vc.get(CV_CAP_PROP_FRAME_WIDTH), vc.get(CV_CAP_PROP_FRAME_HEIGHT) );
+    std::cerr << "Opened stream size: " << openedStreamSize << std::endl;
+#endif
+
+    assert(vc.isOpened());
+
+    cv::Mat frame;
+    int keypress;
+    int frameno = 0;
+    while ( vc.read(frame) )
+    {
+        //preprocess frame (resize + crop)
+        if (options.isFlipped)
+            cv::flip(frame, frame, 0);
+        if (options.isTransposed)
+            frame = frame.t();
         
-        
-        if (options.count("camid") > 0){
-            vc = cv::VideoCapture(std::stoi(options["camid"]));
-            vc.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
-            vc.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
+        const float scaleFactor = std::min( (float) options.size.width / (float) frame.cols, (float) options.size.height / (float) frame.rows );
+        cv::resize(frame, frame, cv::Size(), scaleFactor, scaleFactor);
+        //cv::resize(frame, frame, options.size);
+
+        //measure delta_T
+        auto start = std::chrono::system_clock::now();
+        auto result = pDetector->detect(frame);
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start);    //duration in milliseconds
+        double fps = 1000.0 / duration.count(); // (1000 ms/s) / (duration ms / frame) = frame/s
+        std::cerr << "Frame " << frameno << ": " << "Stage 1 det = " << pDetector->getFirstStageResults().size() << ", Stage 2 det = " << result.size() << std::endl;
+        if ( !result.empty() )
+        {
+            std::cout << '\a';
         }
+        ++frameno;
 
-        else if (options.count("video") > 0)
-            vc = cv::VideoCapture(options["video"]);
-
-        else{
-            throw(std::runtime_error("SIGNFINDER ERROR :: No video source has been specified.\n"));
-        }
-
-        bool dumpPatches = false;
-        bool saveFrames = false;
-        std::string patchPrefix;
-        if (options.count("dump") > 0){
-            dumpPatches = true;
-            patchPrefix = options["dump"];
-        }
-
-        if (options.count("save") > 0)
-            saveFrames = true;
-
-        if (vc.isOpened()){
-            cv::Mat frame;
-            int keypress;
-            int frameno = 0;
-            while (vc.read(frame)){
-                //measure delta_T
-                auto start = std::chrono::system_clock::now();
-                auto result = pDetector->detect(frame);
-                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start);
-                double fps = 1000.0 / duration.count();
-                ++frameno;
-
-                if (dumpPatches)
-                {
-                    dumpStage1(*pDetector, frame, patchPrefix + "_" + std::to_string(frameno));
-                }
-                putText(frame, "FPS: " + std::to_string(fps), cv::Point(100, frame.size().height - 100), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 255, 0));
-
-                //plotting ROIs and confidence values
-                for (const auto& res : result)
-                {
-                    cv::rectangle(frame, res.roi, cv::Scalar(0, 0, 255), 2);
-                    //write confidence and size 
-                    putText(frame, "p=" + std::to_string(res.confidence), res.roi.br(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
-                    putText(frame, std::to_string(res.roi.width) + "x" + std::to_string(res.roi.height), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
-                }
-                cv::imshow("Detection", frame);
-                if (saveFrames)
-                    cv::imwrite(std::string("frame_" + std::to_string(frameno) + ".png"), frame);
-                keypress = cv::waitKey(1);
-
-                if (keypress == 27) //exit on escape
-                    break;
+        if (options.doShowIntermediate)
+        {
+            for (const auto& r : pDetector->getFirstStageResults())
+            {
+                cv::rectangle(frame, r, cv::Scalar(255, 0, 0), 2);
             }
         }
-        else
-            throw(std::runtime_error("SIGNFINDER ERROR :: Unable to load video file.\n"));
-    }
+        if (!options.patchPrefix.empty())
+        {
+            dumpStage1(*pDetector, frame, options.patchPrefix + "_" + std::to_string(frameno));
+        }
+        cv::putText(frame, "FPS: " + std::to_string(fps), cv::Point(100, frame.size().height - 100), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 255, 0));
 
-    catch (std::exception& e){
-        std::cout << e.what() << '\n';
-#ifndef NDEBUG_
-        throw;  //for memory dump in debug mode.
-#endif
+        //plotting ROIs and confidence values
+        for (const auto& res : result)
+        {
+            cv::rectangle(frame, res.roi, cv::Scalar(0, 0, 255), 2);
+            //write confidence and size 
+            cv::putText(frame, "p=" + std::to_string(res.confidence), res.roi.br(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
+            cv::putText(frame, to_string(res.roi.size()), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
+        }
+
+        cv::imshow("Detections", frame);
+
+        if (options.doSaveFrames)
+            cv::imwrite(std::string("frame_" + std::to_string(frameno) + ".png"), frame);
+        keypress = cv::waitKey(1);
+
+        if (keypress == 27) //exit on escape
+            break;
     }
     return EXIT_SUCCESS;
     

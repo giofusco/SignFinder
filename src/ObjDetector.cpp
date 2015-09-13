@@ -25,7 +25,7 @@ cascadeScaleFactor(1.1f),
 SVMThreshold(.5f)
 {}
 
-/// @class cascade detector
+/// @class cascade detector using lbp features. used as first stage detector
 class ObjDetector::CascadeDetector
 {
 public:
@@ -73,7 +73,7 @@ private:
 };  // ObjDetector::CascadeDetector
 
 
-/// @class cascade detector
+/// @class svm detector using HoG features, used as second stage classifier
 class ObjDetector::SVMDetector
 {
 public:
@@ -187,48 +187,6 @@ ObjDetector::Ptr ObjDetector::Create(const Parameters& params) throw (std::runti
     return handle;
 }
 
-//
-//ObjDetector::ObjDetector(std::string resourceLocation) throw(std::runtime_error):
-//params_(resourceLocation),
-//cascade_(params_.cascadeFileName),
-//hog_(params_.hogWinSize,    //winSize
-//     cv::Size(16,16),       //blockSize
-//     cv::Size(4,4),         //blockStride
-//     cv::Size(8,8),         //cellSize
-//     9,                     //nbins
-//     1,                     //derivAperture
-//     -1,                    //winSigma,
-//     cv::HOGDescriptor::L2Hys,  //histogramNormType,
-//     .2,                    //L2HysThreshold,
-//     true,                  //gammaCorrection
-//     1                      //nLevels
-//     ),
-//model_(svm_load_model(params_.svmModelFileName.c_str())),
-//init_(false)
-//{
-//    //check for problems
-//    
-//    if (!params_.isInit())
-//        throw std::runtime_error("OBJDETECTOR ERROR :: Could not initialize parameters.");
-//    if (cascade_.empty())
-//        throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load cascade classifier." + params_.cascadeFileName));
-//    
-//    if (model_ == nullptr)
-//    {
-//        throw(std::runtime_error("OBJDETECTOR ERROR :: Cannot load SVM classifier.\n"));
-//    }
-//    init_ = true;
-//}
-//
-//void setClassifiersFolder(std::string folder);
-
-//ObjDetector::~ObjDetector()
-//{
-//    if (model_)
-//        delete model_;
-//}
-//
-
 ObjDetector::ObjDetector() noexcept:
 pCascadeDetector(nullptr),
 pSVMDetector(nullptr)
@@ -241,97 +199,16 @@ ObjDetector::~ObjDetector() = default;
 * @param[in] frame
 * \return a vector of DetectionInfo containing information about the detections 
 */
-std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame)
+std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(const cv::Mat& frame)
 {
     assert( pCascadeDetector && pSVMDetector );
-//    
-//    if (params_.scalingFactor != 1 && params_.scalingFactor > 0)
-//        resize(frame, frame, cv::Size(frame.size().width * params_.scalingFactor, frame.size().height* params_.scalingFactor));
-//
-//    if (params_.flip)
-//        flip(frame, frame, 0);
-//
-//    if (params_.transpose)      
-//        frame = frame.t();
-//    
-//    //cropping
-//    cv::Rect croppedArea( 0, 0, frame.cols * params_.croppingFactors[0], frame.rows *params_.croppingFactors[1] );
-//    cv::Mat cropped = frame( croppedArea );
 
     //Run cascade detector
     rois_ = pCascadeDetector->detect(frame);
-    //getROIs(cropped);
+    //std::cerr << "Stage 1: " << rois_.size() << std::endl;
+    //groupRectangles(rois_, 1);
     
     //Verify rois_ using HoG-SVM.
     return pSVMDetector->detect(frame, rois_);
-    //return verifyROIs( cropped );
 }
 
-/*!
- * First stage of cascade classifier
- * @param[in] frame frame to process
- * @param[in] rois vector containing the candidate ROIs
- * @return a vector of detections that passed the verification
- * @throw runtime error if unable to allocate memory for this stage
- */
-//void ObjDetector::getROIs(const cv::Mat& frame)
-//{
-//    rois_.clear();
-//    cascade_.detectMultiScale( frame, rois_, params_.cascadeScaleFactor, 0, 0, params_.cascadeMinWin, params_.cascadeMaxWin );
-//    
-//    groupRectangles(rois_, 1);
-//    
-//    if (params_.showIntermediate)
-//    {
-//        cv::Mat tmp = frame.clone();
-//        for (const auto& r : rois_){
-//            cv::rectangle(tmp, r, cv::Scalar(255, 0, 0), 2);
-//        }
-//        cv::imshow("Stage 1", tmp);
-//    }
-//
-//}
-//
-/*!
-* Verifies the ROIs detected in the first stage using SVM + HOG
-* @param[in] frame frame to process
-* @param[in] rois vector containing the candidate ROIs
-* @return a vector of detections that passed the verification
-* @throw runtime error if unable to allocate memory for this stage
-*/
-//std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(const cv::Mat& frame) const throw (std::runtime_error) {
-//
-//	std::vector<ObjDetector::DetectionInfo> result;
-//	double prob_est[2];
-//
-//    //TODO: The index is set from scratch for each patch. If descriptor sizes are the same for each window, the next two can be optimized by setting it once as member variables
-//    std::vector<float> desc;
-//    std::vector<svm_node> x;
-//
-//	for (int r = 0; r < rois_.size(); r++){
-//		//use svm to classify the rois
-//		cv::Mat patch(frame, rois_[r]);
-//
-//		cv::Mat res(1, 1, CV_32FC1);
-//		resize(patch, patch, params_.hogWinSize);
-//		hog_.compute(patch, desc);
-//        x.resize(desc.size() + 1);
-//
-//		for (int d = 0; d < desc.size(); d++){
-//			x[d].index = d + 1;  // Index starts from 1; Pre-computed kernel starts from 0
-//			x[d].value = desc[d];
-//		}
-//
-//		x[desc.size()].index = -1;
-//		patch.release();
-//		res.release();
-//		desc.clear();
-//
-//		svm_predict_probability(model_, x.data(), prob_est);
-//
-//		if ((prob_est[0] > params_.SVMThreshold))
-//			result.push_back({ rois_[r], prob_est[0] });
-//	}
-//
-//	return result;
-//}

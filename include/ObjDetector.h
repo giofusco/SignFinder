@@ -69,7 +69,7 @@ public:
      * @param[in] frame
      * @return a vector of DetectionInfo containing information about the verified detections
      */
-	std::vector<DetectionInfo> detect(cv::Mat& frame);
+	std::vector<DetectionInfo> detect(const cv::Mat& frame);
 	
 #ifndef NDEBUG
     inline const std::vector<cv::Rect>& getFirstStageResults() const
@@ -80,7 +80,6 @@ public:
 private:
     /// Default Ctor
     ObjDetector() noexcept;
-//    ObjDetector(std::string resourceLocation) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
 
     /// Delete copy ctor and assignment operator
     ObjDetector(const ObjDetector&) = delete;
@@ -91,15 +90,6 @@ private:
     std::unique_ptr<CascadeDetector> pCascadeDetector;  //< ptr to first stage detector
     std::unique_ptr<SVMDetector> pSVMDetector;          //< ptr to second stage detector
     
-//    void getROIs(const cv::Mat& frame);
-//	std::vector<ObjDetector::DetectionInfo> verifyROIs(const cv::Mat& frame) const throw (std::runtime_error); ///< Filters candidate ROIs using SVM
-//
-//	const DetectionParams params_;			///< parameters of the detector
-//	mutable cv::CascadeClassifier cascade_;		///< cascade classifier, mutable since cv::CascadeClassifier::detectMultiScale is not const, but does not change internal state of ObjDetector
-//	const cv::HOGDescriptor hog_;				///< hog feature extractor
-//	const svm_model* model_;			///< svm classifier
-//
-
     std::vector<cv::Rect> rois_;        //< rois detected by the first stage
 };
 
