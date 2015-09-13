@@ -21,6 +21,10 @@ Author: Giovanni Fusco - giofusco@ski.org
 #include "ObjDetector.h"
 #include <exception>
 #include <chrono>
+#include <iostream>
+#include <string>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 namespace
 {
@@ -95,9 +99,6 @@ namespace
         }
         params.hogWinSize.height = (int) n2;
 
-//        n = fs["ScaleFactor"];
-//        const float scalingFactor = (n.empty() ? 1.f : (float) n[0]);
-
         // Optional parameters
         n = fs["maxWinSizeFactor"];
         const float cascadeMaxWinFactor = (n.empty() ? 8.f : (float) n[0]);
@@ -115,78 +116,10 @@ namespace
         {
             params.SVMThreshold = (float) n;
         }
-
-//        n = fs["CroppingFactors"];
-//        if (!n.empty()){
-//            for (it = n.begin(); it != n.end(); ++it){
-//                cv::FileNode tmp = *it;
-//                if (tmp.name() == "width")
-//                    croppingFactors[0] = (float)tmp[0];
-//                else if (tmp.name() == "height")
-//                    croppingFactors[1] = (float)tmp[0];
-//                else{
-//                    std::clog << "Config File :: Unexpected Parameter: '" << tmp.name() << "' Ignoring.\n";
-//                }
-//            }
-//        }
-//        else{
-//            croppingFactors[0] = 1.;
-//            croppingFactors[1] = 1.;
-//        }
-//        
-//        n = fs["ScaleFactor"];
-//        if (!n.empty())
-//            scalingFactor = (float)n[0];
-//        else
-//            scalingFactor = 1.;
-//        
-//        n = fs["Flip"];
-//        if (!n.empty())
-//            flip = (int)n[0];
-//        else
-//            flip = false;
-//        
-//        n = fs["Transpose"];
-//        if (!n.empty())
-//            transpose = (int)n[0];
-//        else
-//            transpose = false;
-//        
-//        n = fs["ShowIntermediate"];
-//        if (!n.empty())
-//            showIntermediate = (int)n[0];
-//        else
-//            showIntermediate = false;
-//        
-        
     }
     
     Options parseOptions(int argc, char* argv[])
     {
-//        std::map<std::string, std::string> options;
-//        int o = 1;
-//        std::string opt;
-//        while (o < argc){
-//            opt = argv[o];
-//            
-//            if (opt == "-res"){
-//                options.insert(std::make_pair("res", argv[o + 1]));
-//            }
-//            else if (opt == "-video"){
-//                options.insert(std::make_pair("video", argv[o + 1]));
-//            }
-//            else if (opt == "-camid"){
-//                options.insert(std::make_pair("camid", argv[o + 1]));
-//            }
-//            else if (opt == "-dump"){
-//                options.insert(std::make_pair("dump", argv[o + 1]));
-//            }
-//            else if (opt == "-save")
-//                options.insert(std::make_pair("save", "1"));
-//            o++;
-//            
-//        }
-        
         const char* keys =
         {
             "{h | help            | false       | print this message                                            }"

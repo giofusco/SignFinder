@@ -18,6 +18,9 @@ Author: Giovanni Fusco - giofusco@ski.org
 */
 
 #include "ObjDetector.h"
+#include "svm.h"
+#include <opencv2/objdetect/objdetect.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 /// Ctor with default parameters
 ObjDetector::Parameters::Parameters():
@@ -131,7 +134,7 @@ public:
             cv::Mat patch(frame, roi);
             
             cv::Mat res(1, 1, CV_32FC1);
-            resize(patch, patch, hogWinSz_);
+            cv::resize(patch, patch, hogWinSz_);
             hog_.compute(patch, desc);
             x.resize(desc.size() + 1);
             
@@ -205,7 +208,6 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(const cv::Mat& frame
 
     //Run cascade detector
     rois_ = pCascadeDetector->detect(frame);
-    //std::cerr << "Stage 1: " << rois_.size() << std::endl;
     //groupRectangles(rois_, 1);
     
     //Verify rois_ using HoG-SVM.

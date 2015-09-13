@@ -16,10 +16,9 @@ limitations under the License.
 #ifndef OBJ_DETECTOR_H
 #define OBJ_DETECTOR_H
 
-#include <limits.h>
-#include "DetectionParams.h"
-#include "svm.h"
+#include <opencv2/core/core.hpp>
 #include <memory>
+#include <string>
 
 /** \class ObjDetector
 *  \brief Two-stages object detector.
@@ -49,9 +48,6 @@ public:
         cv::Size cascadeMinWin;		///< min window size for multi-scale detection
         cv::Size cascadeMaxWin;		///< max window size for multi-scale detection
         
-        //float cascadeMaxWinFactor;
-        //float croppingFactors[2];	///< (0: width, 1: height)
-        //float scalingFactor;		///< image rescaling factor (0., +inf)
         float cascadeScaleFactor;	///< multiscale detection scaling factor
         float SVMThreshold;			///< theshold for rejection of candidate ROIs
         
