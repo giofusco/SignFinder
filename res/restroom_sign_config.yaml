@@ -3,7 +3,7 @@
 # ATTENTION: DO NOT USE TAB CHARACTERS WHEN EDITING THIS FILE (you can replace tabs with spaces in you editor settings)
 
 # Classifiers location
-ClassifiersFolder: "C:/dev/workspace/WICAB_SingFinding/Deliverable/SignFinder/build/bin/res/"    #folder containing the classifiers (used for desktop only)
+ClassifiersFolder: "res/"    #folder containing the classifiers (used for desktop only)
 CascadeFile: "restroom_sign_cascade.xml"     # cascade classifier filename
 SVMFile: "restroom_sign_model.svm"       # SVM model 
 

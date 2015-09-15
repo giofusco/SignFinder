@@ -182,7 +182,7 @@ params_(yamlConfigFile, classifiersFolder)
 {
     //params_.loadFromFile(yamlConfigFile, classifiersFolder);
 	init();
-}
+}   
 
 void ObjDetector::init(const std::string& yamlConfigFile) throw (std::runtime_error)
 {

@@ -54,146 +54,120 @@ DetectionParams::~DetectionParams() = default;
 */
 void DetectionParams::loadFromFile(const std::string& yamlConfigFile, const std::string& classFolder) throw(std::runtime_error){
 
-	cv::FileNode n;
-	cv::FileNodeIterator it;
-
 	try{
 		cv::FileStorage fs(yamlConfigFile, cv::FileStorage::READ);
 		configFileName = yamlConfigFile;
+        
+        if (!fs.isOpened())
+        {
+            throw std::runtime_error("CONFIG PARSER ERROR :: Couldn't load configuration file: " + yamlConfigFile + "\n");
+        }
+        //if the folder containing the classifiers is not specified read it from the config file
+        if (classFolder.empty()){
+            this->classifiersFolder = (std::string)fs["ClassifiersFolder"];
+            if (classifiersFolder.empty())
+                throw (std::runtime_error("CONFIG PARSER ERROR :: Classifiers Folder not specified. \n"));
+        }
+        else classifiersFolder = classFolder;
 
-		if (fs.isOpened()){
+        //replace separators with the right ones
+        fixPathString(classifiersFolder);
+        
+        cascadeFile = (std::string)fs["CascadeFile"];
+        if (cascadeFile.empty())
+            throw (std::runtime_error("CONFIG PARSER ERROR :: Cascade Classifier not specified. \n"));
+        cascadeFile = classifiersFolder + cascadeFile; //full filename
 
-			//if the folder containing the classifiers is not specified read it from the config file
-			if (classFolder.empty()){
-				this->classifiersFolder = (std::string)fs["ClassifiersFolder"];
-				if (classifiersFolder.empty())
-					throw (std::runtime_error("CONFIG PARSER ERROR :: Classifiers Folder not specified. \n"));
-			}
-			else classifiersFolder = classFolder;
+        svmModelFile = (std::string)fs["SVMFile"];
+        if (svmModelFile.empty())
+            throw (std::runtime_error("CONFIG PARSER ERROR :: SVM Classifier not specified. \n"));
+        svmModelFile = classifiersFolder + svmModelFile; //full filename
 
-			//replace separators with the right ones
-			fixPathString(classifiersFolder);
-			
-			cascadeFile = (std::string)fs["CascadeFile"];
-			if (cascadeFile.empty())
-				throw (std::runtime_error("CONFIG PARSER ERROR :: Cascade Classifier not specified. \n"));
-			cascadeFile = classifiersFolder + cascadeFile; //full filename
-
-			svmModelFile = (std::string)fs["SVMFile"];
-			if (svmModelFile.empty())
-				throw (std::runtime_error("CONFIG PARSER ERROR :: SVM Classifier not specified. \n"));
-			svmModelFile = classifiersFolder + svmModelFile; //full filename
-
-			n = fs["minWinSize"];
-			if (!n.empty()){
-				for (it = n.begin(); it != n.end(); ++it){
-					cv::FileNode tmp = *it;
-					if (tmp.name() == "width")
-						cascadeMinWin.width = (int)tmp[0];
-					else if (tmp.name() == "height")
-						cascadeMinWin.height = (int)(int)tmp[0];
-					else{
-						std::clog << "Config File :: Unexpected Parameter: '" << tmp.name() << "' Ignoring.\n";
-					}
-				}
-			}
-			else
-				throw(std::runtime_error("CONFIG PARSER ERROR :: Cascade Minimum Window Size not specified.\n"));
-
-
-			n = fs["maxWinSizeFactor"];
-			if (!n.empty())
-				cascadeMaxWinFactor = (float)n[0];
-			else{
-				std::cerr << "Config File :: maxWinSizeFactor not found. Using default value.\n";
-				cascadeMaxWinFactor = 8.;
-			}
-			cascadeMaxWin = cv::Size(cascadeMinWin.width*cascadeMaxWinFactor, cascadeMinWin.height*cascadeMaxWinFactor);
-
-			n = fs["HOG_winSize"];
-			if (!n.empty()){
-				for (it = n.begin(); it != n.end(); ++it){
-					cv::FileNode tmp = *it;
-					if (tmp.name() == "width")
-						hogWinSize.width = (int)tmp[0];
-					else if (tmp.name() == "height")
-						hogWinSize.height = (int)(int)tmp[0];
-					else{
-						std::clog << "Config File :: Unexpected Parameter: '" << tmp.name() << "' Ignoring.\n";
-					}
-				}
-			}
-			else
-				throw(std::runtime_error("CONFIG PARSER ERROR :: HOG Window Size not specified.\n"));
-
-			n = fs["CroppingFactors"];
-			if (!n.empty()){
-				for (it = n.begin(); it != n.end(); ++it){
-					cv::FileNode tmp = *it;
-					if (tmp.name() == "width")
-						croppingFactors[0] = (float)tmp[0];
-					else if (tmp.name() == "height")
-						croppingFactors[1] = (float)tmp[0];
-					else{
-						std::clog << "Config File :: Unexpected Parameter: '" << tmp.name() << "' Ignoring.\n";
-					}
-				}
-			}
-			else{
-				croppingFactors[0] = 1.;
-				croppingFactors[1] = 1.;
-			}
-
-			n = fs["ScaleFactor"];
-			if (!n.empty())
-				scalingFactor = (float)n[0];
-			else
-				scalingFactor = 1.;
-
-			n = fs["Flip"];
-			if (!n.empty())
-				flip = (int)n[0];
-			else
-				flip = false;
-
-			n = fs["Transpose"];
-			if (!n.empty())
-				transpose = (int)n[0];
-			else
-				transpose = false;
-
-			n = fs["ShowIntermediate"];
-			if (!n.empty())
-				showIntermediate = (int)n[0];
-			else
-				showIntermediate = false;
-
-			n = fs["CascadeScaleFactor"];
-			if (!n.empty())
-				cascadeScaleFactor = (float)n[0];
-			else
-				cascadeScaleFactor = 1.1;
-
-			n = fs["SVMThreshold"];
-			if (!n.empty())
-				SVMThreshold = (float)n[0];
-			else
-				SVMThreshold = .5;
-
-            n = fs["maxAgePreConfirmation"];
-            maxAgePreConfirmation = (n.empty() ? 5 : (int) n);
-            
-            n = fs["maxAgePostConfirmation"];
-            maxAgePostConfirmation = (n.empty() ? 15 : (int) n);
-            
-            n = fs["nHangOverFrames"];
-            nHangOverFrames = (n.empty() ? 3 : (int) n);
+        cv::FileNode n, n2;
+        n = fs["minWinSize"];
+        if ( n.empty() )
+        {
+            throw std::runtime_error("Parser Error :: Cascade Minimum Window Size not specified.\n");
+        }
+        n2 = n["width"];
+        if ( n2.empty() )
+        {
+            throw std::runtime_error("Parser Error :: Cascade Minimum Window Size width not specified.\n");
+        }
+        cascadeMinWin.width = (int) n2;
+        n2 = n["height"];
+        if ( n2.empty() )
+        {
+            throw std::runtime_error("Parser Error :: Cascade Minimum Window Size height not specified.\n");
+        }
+        cascadeMinWin.height = (int) n2;
+        
+        n = fs["HOG_winSize"];
+        if ( n.empty() )
+        {
+            throw(std::runtime_error("Parser Error :: HOG Window Size not specified.\n"));
+        }
+        n2 = n["width"];
+        if ( n2.empty() )
+        {
+            throw std::runtime_error("Parser Error :: HOG Window Size width not specified.\n");
+        }
+        hogWinSize.width = (int) n2;
+        n2 = n["height"];
+        if ( n2.empty() )
+        {
+            throw std::runtime_error("Parser Error :: HOG Window Size height not specified.\n");
+        }
+        hogWinSize.height = (int) n2;
 
 
-			init_ = true;
-		}
-		else
-			throw(std::runtime_error("CONFIG PARSER ERROR :: Couldn't load configuration file: " + yamlConfigFile + "\n"));
+        n = fs["maxWinSizeFactor"];
+        const float cascadeMaxWinFactor = (n.empty() ? 8.f : (float) n[0]);
+        cascadeMaxWin.width = cascadeMinWin.width * cascadeMaxWinFactor;
+        cascadeMaxWin.height = cascadeMinWin.height * cascadeMaxWinFactor;
+
+        n = fs["CroppingFactors"];
+        if (n.empty())
+        {
+            croppingFactors[0] = 1.f;
+            croppingFactors[1] = 1.f;
+        }
+        else
+        {
+            n2 = n["width"];
+            croppingFactors[0] = (n2.empty() ? 1.f : (float) n2);
+            n2 = n["height"];
+            croppingFactors[1] = (n2.empty() ? 1.f : (float) n2);
+        }
+
+        n = fs["ScaleFactor"];
+        scalingFactor = (n.empty() ? 1. : (float) n);
+
+        n = fs["CascadeScaleFactor"];
+        cascadeScaleFactor = (n.empty() ? 1.1 : (float) n);
+        
+        n = fs["SVMThreshold"];
+        SVMThreshold = (n.empty() ? .5 : (float) n);
+
+        n = fs["maxAgePreConfirmation"];
+        maxAgePreConfirmation = (n.empty() ? 5 : (int) n);
+        
+        n = fs["maxAgePostConfirmation"];
+        maxAgePostConfirmation = (n.empty() ? 15 : (int) n);
+        
+        n = fs["nHangOverFrames"];
+        nHangOverFrames = (n.empty() ? 3 : (int) n);
+
+        n = fs["Flip"];
+        flip = (n.empty() ? false : (int) n);
+        
+        n = fs["Transpose"];
+        transpose = (n.empty() ? false : (int) n);
+        
+        n = fs["ShowIntermediate"];
+        showIntermediate = (n.empty() ? false : (int) n);
+        
+        init_ = true;
 	}
 
 	catch (std::exception& e)
@@ -214,9 +188,5 @@ void DetectionParams::fixPathString(std::string& instring){
 #endif
 	if (instring.back() != sep)
 		instring.push_back(sep);
-
-}
-
-void DetectionParams::setClassifiersFolder(std::string folder){ ///< sets the folder containing the classifiers (useful to change path at runtime)
 
 }

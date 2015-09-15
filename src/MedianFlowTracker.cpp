@@ -13,10 +13,6 @@
 #include <cassert>
 #include <tuple>
 
-//#ifndef NDEBUG
-//#include "opencv2/highgui/highgui.hpp"
-//#endif
-
 namespace
 {
     //=========================
@@ -256,16 +252,6 @@ cv::Rect trackMedianFlow(const cv::Rect& loc, const MatUint8& prevImg, const Mat
     //ensure box is still inside the frame
     res &= cv::Rect(0, 0, currentImg.cols, currentImg.rows);
 
-//#ifndef NDEBUG
-//    auto output = currentImg.clone();
-//    for (auto const &pt : pointCorrespondences)
-//    {
-//        cv::line(output, pt.first, pt.second, 255);
-//    }
-//    //Draw the bbox
-//    cv::rectangle(output, res.first, 255);
-//    cv::imshow("Point correspondences", output);
-//#endif
     return res;
 }
 

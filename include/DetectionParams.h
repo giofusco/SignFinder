@@ -68,7 +68,6 @@ public:
 private:
 	bool init_;					///< specifies if the parameters have been initialized or not
 
-	void setClassifiersFolder(std::string folder); ///< sets the folder containing the classifiers (useful to change path at runtime)
 	void fixPathString(std::string& instring); ///< fix path strings according to the OS
 
 	inline char separator(){
