@@ -19,6 +19,7 @@ limitations under the License.
 #include <time.h>
 #include <vector>
 #include <string>
+#include <memory>
 #include <opencv2/core/core.hpp>
 #include "DetectionParams.h"
 
@@ -40,12 +41,11 @@ public:
 	   ///< It contains the ROI in the image where the detection occurred and the corresponging confidence value (SVM likelihood) assigned by the second stage classifier
 
     ObjDetector();	///< basic constructor. The parameters are not initialized.
-	ObjDetector(const std::string& yamlConfigFile) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
-	ObjDetector(const std::string& yamlConfigFile, const std::string& classifiersFolder) throw(std::runtime_error); ///< constructor. The parameters are inizialized using the file passed in input and the specified classifiers folder.
+    ObjDetector(const std::string& yamlConfigFile, const std::string& classifiersFolder=std::string()) throw(std::runtime_error); ///< constructor. The parameters are inizialized using the file passed in input and the specified classifiers folder.
 	~ObjDetector();
-    std::vector<DetectionInfo> detect(cv::Mat& frame) throw (std::runtime_error);	///< performs object detection on the frame in input.
-	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS) throw (std::runtime_error);	///< performs object detection on the frame in input and returns the frame rate.
-    void init(const std::string& yamlConfigFile) throw (std::runtime_error); ///< initializes the parameters using the file in input.
+    std::vector<DetectionInfo> detect(cv::Mat& frame, bool doTrack=true) throw (std::runtime_error);	///< performs object detection on the frame in input.
+	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS, bool doTrack=true) throw (std::runtime_error);	///< performs object detection on the frame in input and returns the frame rate.
+    void init(const std::string& yamlConfigFile, const std::string& classifiersFolder=std::string()) throw (std::runtime_error); ///< initializes the parameters using the file in input.
 	
     inline std::vector<cv::Rect> getStage1Rois() const { return rois_;}
     std::vector<DetectionInfo> getStage2Rois() const;

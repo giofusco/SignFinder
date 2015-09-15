@@ -162,31 +162,18 @@ params_()
 {
 }
 
-
-ObjDetector::ObjDetector(const std::string& yamlConfigFile) throw(std::runtime_error) :
-init_(false),
-pCascadeDetector(nullptr),
-pSVMClassifier(nullptr),
-params_(yamlConfigFile)
-{
-    //params_.loadFromFile(yamlConfigFile);
-	init();
-	
-}
-
 ObjDetector::ObjDetector(const std::string& yamlConfigFile, const std::string& classifiersFolder) throw(std::runtime_error) :
 init_(false),
 pCascadeDetector(nullptr),
 pSVMClassifier(nullptr),
 params_(yamlConfigFile, classifiersFolder)
 {
-    //params_.loadFromFile(yamlConfigFile, classifiersFolder);
 	init();
 }   
 
-void ObjDetector::init(const std::string& yamlConfigFile) throw (std::runtime_error)
+void ObjDetector::init(const std::string& yamlConfigFile, const std::string& classifiersFolder) throw (std::runtime_error)
 {
-    params_.loadFromFile(yamlConfigFile);
+    params_.loadFromFile(yamlConfigFile, classifiersFolder);
     init();
 };
 
@@ -223,13 +210,13 @@ void ObjDetector::init() throw(std::runtime_error)
 * @param[out] FPS 
 * \return a vector of DetectionInfo containing information about the detections and the frame rate
 */
-std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, double& FPS) throw (std::runtime_error)
+std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, double& FPS, bool doTrack) throw (std::runtime_error)
 {
 	//measure delta_T
     time_t end;
 	if (counter_ == 0)
 		time(&start_);
-	auto result = detect(frame);
+	auto result = detect(frame, doTrack);
 	time(&end);
 	counter_++;
 	double sec = difftime(end, start_);
@@ -242,7 +229,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, doub
 * @param[in] frame
 * \return a vector of DetectionInfo containing information about the detections 
 */
-std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame) throw (std::runtime_error)
+std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool doTrack) throw (std::runtime_error)
 {
 //	result_.clear();
 //	if (params_.isInit()){
@@ -288,7 +275,6 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame) thro
     }
     assert( pCascadeDetector && pSVMClassifier );
     
-    
     if (params_.scalingFactor != 1 && params_.scalingFactor > 0)
         resize(frame, frame, cv::Size(), params_.scalingFactor, params_.scalingFactor);
 
@@ -302,116 +288,132 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame) thro
     //cropping
     cv::Mat cropped = frame( cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().height*params_.croppingFactors[1]) );
 
-    cv::Mat_<std::uint8_t> grayFrame;
+    std::vector<DetectionInfo> result;
     
-    // track all objects that wer epreviously detected
-    if ( !secondStageOutputs_.empty() ) //objects being tracked
+    //with or without tracking
+    if (doTrack)    //with tracking
     {
-        cv::cvtColor(cropped, grayFrame, CV_BGR2GRAY);
-        for (auto it = secondStageOutputs_.begin(); it != secondStageOutputs_.end(); )
+        cv::Mat_<std::uint8_t> grayFrame;
+        // track all objects that were previously detected
+        if ( !secondStageOutputs_.empty() ) //objects being tracked
         {
-            it->roi = trackMedianFlow(it->roi, prevFrame_, grayFrame);
-            if (0 == it->roi.area() )    //tracker lost object
+            cv::cvtColor(cropped, grayFrame, CV_BGR2GRAY);
+            for (auto it = secondStageOutputs_.begin(); it != secondStageOutputs_.end(); )
             {
-                it = secondStageOutputs_.erase(it);
-                continue;
+                it->roi = trackMedianFlow(it->roi, prevFrame_, grayFrame);
+                if (0 == it->roi.area() )    //tracker lost object
+                {
+                    it = secondStageOutputs_.erase(it);
+                    continue;
+                }
+                // attempt to confirm detections via svm.
+                auto res = pSVMClassifier->classify(cropped(it->roi));  //TODO: If SVM is using grayscale, we should just pass it the grayscale image to reduce computation
+                it->confidence = res.second;
+                if ( (1 == res.first) && (res.second > params_.SVMThreshold) ) //svm confirms detection
+                {
+                    it->age = 0;
+                }
+                else    //svm did not classify patch as foreground
+                {
+                    ++it->age;   //increase age
+                }
+                ++it;
             }
-            // attempt to confirm detections via svm.
-            auto res = pSVMClassifier->classify(cropped(it->roi));  //TODO: If SVM is using grayscale, we should just pass it the grayscale image to reduce computation
-            it->confidence = res.second;
+        }
+        
+        // Run cascade detector
+        rois_ = pCascadeDetector->detect(cropped);
+        std::vector<DetectionInfo> newDetections;
+        for (const auto& det : rois_)
+        {
+            auto res = pSVMClassifier->classify(cropped(det));
             if ( (1 == res.first) && (res.second > params_.SVMThreshold) ) //svm confirms detection
             {
-                it->age = 0;
+                newDetections.push_back({det, res.second});
             }
-            else    //svm did not classify patch as foreground
+        }
+        
+        // Combine detections
+        auto overlaps = [](const cv::Rect& r1, const cv::Rect& r2){return ( (r1 & r2).area() > .5 * std::min(r1.area(), r2.area()) ); };   //two rectangles overlap if their intersection is greater than half the smaller
+        for (auto& obj : secondStageOutputs_)
+        {
+            for (auto itDet = newDetections.begin(); itDet != newDetections.end(); )
             {
-                ++it->age;   //increase age
+                if ( overlaps(obj.roi, itDet->roi) )
+                {
+                    obj.age = 0;
+                    if (itDet->confidence > obj.confidence)
+                    {
+                        obj.confidence = itDet->confidence;
+                        obj.roi = itDet->roi;
+                    }
+                    itDet = newDetections.erase(itDet);
+                    continue;
+                }
+                ++itDet;
+            }
+        }
+        
+        // prune old detections, update the number oftimes new detections have been seen
+        for (auto it = secondStageOutputs_.begin(); it != secondStageOutputs_.end(); )
+        {
+            if (0 == it->age)
+            {
+                ++(it->nTimesSeen);
+            }
+            else
+            {
+                int maxAge = (it->nTimesSeen < params_.nHangOverFrames ? params_.maxAgePreConfirmation : params_.maxAgePostConfirmation);
+                if (it->age > maxAge)
+                {
+                    it = secondStageOutputs_.erase(it);
+                    continue;
+                }
             }
             ++it;
         }
-    }
-    
-    // Run cascade detector
-    rois_ = pCascadeDetector->detect(cropped);
-    //groupRectangles(firstStageOutputs_, 0);
-    std::vector<DetectionInfo> newDetections;
-    for (const auto& det : rois_)
-    {
-        auto res = pSVMClassifier->classify(cropped(det));
-        if ( (1 == res.first) && (res.second > params_.SVMThreshold) ) //svm confirms detection
+        
+        //get confirmed detections
+        for (const auto& obj : secondStageOutputs_)
         {
-            newDetections.push_back({det, res.second});
-        }
-    }
-    
-    // Combine detections
-    auto overlaps = [](const cv::Rect& r1, const cv::Rect& r2){return ( (r1 & r2).area() > .5 * std::min(r1.area(), r2.area()) ); };   //two rectangles overlap if their intersection is greater than half the smaller
-    for (auto& obj : secondStageOutputs_)
-    {
-        for (auto itDet = newDetections.begin(); itDet != newDetections.end(); )
-        {
-            if ( overlaps(obj.roi, itDet->roi) )
+            if (obj.nTimesSeen > params_.nHangOverFrames)
             {
-                obj.age = 0;
-                if (itDet->confidence > obj.confidence)
-                {
-                    obj.confidence = itDet->confidence;
-                    obj.roi = itDet->roi;
-                }
-                itDet = newDetections.erase(itDet);
-                continue;
-            }
-            ++itDet;
-        }
-    }
-    
-    // prune old detections, update the number oftimes new detections have been seen
-    for (auto it = secondStageOutputs_.begin(); it != secondStageOutputs_.end(); )
-    {
-        if (0 == it->age)
-        {
-            ++(it->nTimesSeen);
-        }
-        else
-        {
-            int maxAge = (it->nTimesSeen < params_.nHangOverFrames ? params_.maxAgePreConfirmation : params_.maxAgePostConfirmation);
-            if (it->age > maxAge)
-            {
-                it = secondStageOutputs_.erase(it);
-                continue;
+                result.push_back({obj.roi, obj.confidence});
             }
         }
-        ++it;
-    }
-    
-    //get confirmed detections
-    std::vector<DetectionInfo> result;
-    for (const auto& obj : secondStageOutputs_)
-    {
-        if (obj.nTimesSeen > params_.nHangOverFrames)
+        
+        // add unmatched new detections
+        for (const auto& det : newDetections)
         {
-            result.push_back({obj.roi, obj.confidence});
+            secondStageOutputs_.push_back({det.roi, det.confidence, 0, 1});
+        }
+        
+        //sort results in order of decreasing confidence (most confident first)
+        std::sort(result.begin(), result.end(), [](const DetectionInfo& res1, const DetectionInfo& res2){return res1.confidence > res2.confidence;});
+        
+        if (!secondStageOutputs_.empty())   //we are tracking some objects, so save the grayscale image for next time
+        {
+            if (grayFrame.empty())  //no objects were tracked before
+            {
+                cv::cvtColor(cropped, prevFrame_, CV_BGR2GRAY);
+            }
+            else
+            {
+                prevFrame_ = grayFrame.clone();
+            }
         }
     }
-    
-    // add unmatched new detections
-    for (const auto& det : newDetections)
+    else
     {
-        secondStageOutputs_.push_back({det.roi, det.confidence, 0, 1});
-    }
-    
-    //sort results in order of decreasing confidence (most confident first)
-    std::sort(result.begin(), result.end(), [](const DetectionInfo& res1, const DetectionInfo& res2){return res1.confidence > res2.confidence;});
-    
-    if (!secondStageOutputs_.empty())   //we are tracking some objects, so save the grayscale image for next time
-    {
-        if (grayFrame.empty())  //no objects were tracked before
+        // Run cascade detector
+        rois_ = pCascadeDetector->detect(cropped);
+        for (const auto& det : rois_)
         {
-            cv::cvtColor(cropped, prevFrame_, CV_BGR2GRAY);
-        }
-        else
-        {
-            prevFrame_ = grayFrame.clone();
+            auto res = pSVMClassifier->classify(cropped(det));
+            if ( (1 == res.first) && (res.second > params_.SVMThreshold) ) //svm confirms detection
+            {
+                result.push_back({det, res.second});
+            }
         }
     }
     return result;
