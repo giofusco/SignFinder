@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Author:    Giovanni Fusco
+Author:    Giovanni Fusco & Ender Tekin
 
 */
 
@@ -20,7 +20,8 @@ Author:    Giovanni Fusco
 #define DETECTION_PARAMS_H
 
 #include <exception>
-#include <iostream>
+#include <string>
+//#include <iostream>
 #include <opencv2/opencv.hpp>
 
 
@@ -34,12 +35,11 @@ class DetectionParams
 {
 public:
 	DetectionParams();
-	DetectionParams(std::string yamlConfigFile) throw (std::runtime_error);
-	DetectionParams(std::string yamlConfigFile, std::string classifiersFolder) throw (std::runtime_error);
+    DetectionParams(const std::string& yamlConfigFile, const std::string& classifiersFolder=std::string()) throw (std::runtime_error);
 	~DetectionParams();
 
-	void loadFromFile(std::string yamlConfigFile) throw(std::runtime_error);
-	void loadFromFile(std::string yamlConfigFile, std::string classifiersFolder) throw(std::runtime_error);
+    void loadFromFile(const std::string& yamlConfigFile, const std::string& classifiersFolder=std::string()) throw(std::runtime_error);
+    
 	inline bool isInit() { return init_; }
 
 	std::string classifiersFolder; ///< base directory containing the Adaboost and the SVM classifier
@@ -56,6 +56,10 @@ public:
 	float scalingFactor;		///< image rescaling factor (0., +inf)
 	float cascadeScaleFactor;	///< multiscale detection scaling factor
 	float SVMThreshold;			///< theshold for rejection of candidate ROIs
+
+    int maxAgePreConfirmation;  ///< max #of frames object can be missed before being confirmed.
+    int maxAgePostConfirmation; ///< max #of frames object a confirmed object can be missed without declaring lost.
+    int nHangOverFrames;        ///< number of hangover frames during which detection must be confirmed
 
 	bool flip;					///< flip input image (used for landscape videos)
 	bool transpose;				///< transpose input image (used for landscape videos)

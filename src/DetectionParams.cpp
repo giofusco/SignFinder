@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Author: Giovanni Fusco - giofusco@ski.org
+Author: Giovanni Fusco - giofusco@ski.org & Ender Tekin
 
 */
 
@@ -23,9 +23,9 @@ Author: Giovanni Fusco - giofusco@ski.org
 * Basic constructor. The state will not be valid,
 * unless loadFromFile is successively called.
 */
-DetectionParams::DetectionParams()
+DetectionParams::DetectionParams():
+init_(false)
 {
-	init_ = false;
 }
 
 
@@ -34,8 +34,9 @@ DetectionParams::DetectionParams()
 * @param[in] yamlConfigFile the full path to the configuration file to parse
 * \exception std::runtime_error error accessing or parsing the configuration file
 */
-DetectionParams::DetectionParams(std::string yamlConfigFile, std::string classifiersFolder) throw(std::runtime_error) : DetectionParams() {
-
+DetectionParams::DetectionParams(const std::string& yamlConfigFile, const std::string& classifiersFolder) throw(std::runtime_error) :
+DetectionParams()
+{
 	loadFromFile(yamlConfigFile, classifiersFolder);
 }
 
@@ -43,18 +44,7 @@ DetectionParams::DetectionParams(std::string yamlConfigFile, std::string classif
 /*!
 * Destructor
 */
-DetectionParams::~DetectionParams()
-{
-}
-
-/*!
-* Initialize the parameters using a configuration file. The folder containing the classifiers to load is read from the configuration file
-* @param[in] yamlConfigFile the full path to the configuration file to parse
-*/
-void DetectionParams::loadFromFile(std::string yamlConfigFile) throw(std::runtime_error){
-	std::string foo;
-	loadFromFile(yamlConfigFile, foo);
-}
+DetectionParams::~DetectionParams() = default;
 
 
 /*!
@@ -62,7 +52,7 @@ void DetectionParams::loadFromFile(std::string yamlConfigFile) throw(std::runtim
 * @param[in] yamlConfigFile the full path to the configuration file to parse
 * @param[in] classifiersFolder the folder containing the classifiers to load
 */
-void DetectionParams::loadFromFile(std::string yamlConfigFile, std::string classFolder) throw(std::runtime_error){
+void DetectionParams::loadFromFile(const std::string& yamlConfigFile, const std::string& classFolder) throw(std::runtime_error){
 
 	cv::FileNode n;
 	cv::FileNodeIterator it;
@@ -190,6 +180,14 @@ void DetectionParams::loadFromFile(std::string yamlConfigFile, std::string class
 			else
 				SVMThreshold = .5;
 
+            n = fs["maxAgePreConfirmation"];
+            maxAgePreConfirmation = (n.empty() ? 5 : (int) n);
+            
+            n = fs["maxAgePostConfirmation"];
+            maxAgePostConfirmation = (n.empty() ? 15 : (int) n);
+            
+            n = fs["nHangOverFrames"];
+            nHangOverFrames = (n.empty() ? 3 : (int) n);
 
 
 			init_ = true;

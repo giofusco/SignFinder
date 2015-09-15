@@ -10,6 +10,8 @@ set( NAME_SRC
     src/main.cpp   
     src/DetectionParams.cpp
     src/ObjDetector.cpp
+    src/MedianFlowTracker.hpp
+    src/MedianFlowTracker.cpp
 )
 
 

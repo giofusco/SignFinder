@@ -16,10 +16,11 @@ limitations under the License.
 #ifndef OBJ_DETECTOR_H
 #define OBJ_DETECTOR_H
 
-#include <time.h> 
-#include <limits.h>
+#include <time.h>
+#include <vector>
+#include <string>
+#include <opencv2/core/core.hpp>
 #include "DetectionParams.h"
-#include "svm.h"
 
 /** \class ObjDetector
 *  \brief Two-stages object detector.
@@ -39,18 +40,15 @@ public:
 	   ///< It contains the ROI in the image where the detection occurred and the corresponging confidence value (SVM likelihood) assigned by the second stage classifier
 
     ObjDetector();	///< basic constructor. The parameters are not initialized.
-	ObjDetector(std::string yamlConfigFile) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
-	ObjDetector(std::string yamlConfigFile, std::string classifiersFolder) throw(std::runtime_error); ///< constructor. The parameters are inizialized using the file passed in input and the specified classifiers folder.
+	ObjDetector(const std::string& yamlConfigFile) throw (std::runtime_error);	///< constructor. The parameters are inizialized using the file passed in input.
+	ObjDetector(const std::string& yamlConfigFile, const std::string& classifiersFolder) throw(std::runtime_error); ///< constructor. The parameters are inizialized using the file passed in input and the specified classifiers folder.
 	~ObjDetector();
-	std::vector<DetectionInfo> detect(cv::Mat& frame);	///< performs object detection on the frame in input.
-	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS);	///< performs object detection on the frame in input and returns the frame rate.
-	inline std::vector<cv::Rect> getStage1Rois(){ return rois_;}
-	inline void init(std::string yamlConfigFile) 
-		throw (std::runtime_error) ///< initializes the parameters using the file in input. 
-		{ params_.loadFromFile(yamlConfigFile);
-		  init();
-		};
+    std::vector<DetectionInfo> detect(cv::Mat& frame) throw (std::runtime_error);	///< performs object detection on the frame in input.
+	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS) throw (std::runtime_error);	///< performs object detection on the frame in input and returns the frame rate.
+    void init(const std::string& yamlConfigFile) throw (std::runtime_error); ///< initializes the parameters using the file in input.
 	
+    inline std::vector<cv::Rect> getStage1Rois() const { return rois_;}
+    std::vector<DetectionInfo> getStage2Rois() const;
 	void dumpStage1(std::string prefix); ///< saves ROIs coming from the first stage to disk
 	void dumpStage2(std::string prefix); ///< saves ROIs coming from the second stage to disk
 	//void dumpStage2(); ///< saves verified ROIs to disk
@@ -61,23 +59,42 @@ private:
 	ObjDetector(const ObjDetector& that) = delete; //disable copy constructor
 
 	void init() throw (std::runtime_error);	///< initializes the classifiers
-	std::vector<ObjDetector::DetectionInfo> verifyROIs(cv::Mat& frame, std::vector<cv::Rect>& rois); ///< Filters candidate ROIs using SVM
 
-	DetectionParams params_;			///< parameters of the detector
-	cv::CascadeClassifier cascade_;		///< cascade classifier
-	cv::HOGDescriptor hog_;				///< hog feature extractor
-	struct svm_model* model_;			///< svm classifier
+//	DetectionParams params_;			//< parameters of the detector
+//	cv::CascadeClassifier cascade_;		//< cascade classifier
+//	cv::HOGDescriptor hog_;				//< hog feature extractor
+//	struct svm_model* model_;			//< svm classifier
 	bool init_;
 
-	std::vector<cv::Rect> rois_;
-	std::vector<ObjDetector::DetectionInfo> result_;
-	std::vector<ObjDetector::DetectionInfo> allResult_; ///< used for debug/ROC experiments, will be removed in final release
+    class CascadeDetector;  //< first stage detector, LBP + Adaboost cascade
+    class SVMClassifier;      //< second stage detector, HoG + SVM
+    std::unique_ptr<CascadeDetector> pCascadeDetector;  //< ptr to first stage detector
+    std::unique_ptr<SVMClassifier> pSVMClassifier;      //< ptr to second stage detector
+    
+    DetectionParams params_;
+    //parameters
+    //const float svmThreshold_;
+    //const int maxAgePreConfirmation_;
+    //const int maxAgePostConfirmation_;
+    //const int nConfirm_;
+    
+    struct TrackingInfo
+    {
+        cv::Rect roi;
+        double confidence;
+        int age;
+        int nTimesSeen;
+    };
+    
+    cv::Mat prevFrame_;
+    
+    std::vector<cv::Rect> rois_;        //< first stage outputs
+    std::vector<TrackingInfo> secondStageOutputs_;  //< second stage outputs, objects that are potentially being tracked
+    //std::vector<ObjDetector::DetectionInfo> result_;
+    //std::vector<ObjDetector::DetectionInfo> allResult_; ///< used for debug/ROC experiments, will be removed in final release
 
-	time_t start_;
-	time_t end_;
+    time_t start_;
 	int counter_;
-	double sec_;
-	double fps_;
 };
 
 #endif
