@@ -18,11 +18,11 @@ Author: Giovanni Fusco - giofusco@ski.org
 */
 
 #include "ObjDetector.h"
+#include "MedianFlowTracker.hpp"
 
-ObjDetector::ObjDetector()
+ObjDetector::ObjDetector():
+init_(false)
 {
-	params_ = DetectionParams();
-	init_ = false;
 }
 
 
@@ -41,8 +41,8 @@ void setClassifiersFolder(std::string folder);
 
 ObjDetector::~ObjDetector()
 {
-	if (init_)
-		delete(model_);
+	if (model_)
+        delete(model_);
 }
 
 /*!

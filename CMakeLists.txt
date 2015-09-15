@@ -24,7 +24,7 @@ endif()
 
 
 #Find LibSVM
-set(LIBSVM_LIBRARY "")
+#set(LIBSVM_LIBRARY "")
 find_package(LibSVM)
 if (LIBSVM_FOUND)
   message(STATUS "LibSVM Found")
