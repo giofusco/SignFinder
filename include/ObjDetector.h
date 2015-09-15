@@ -52,6 +52,7 @@ public:
 		};
 	
 	void dumpStage1(std::string prefix); ///< saves ROIs coming from the first stage to disk
+	void dumpStage2(std::string prefix); ///< saves ROIs coming from the second stage to disk
 	//void dumpStage2(); ///< saves verified ROIs to disk
 	cv::Mat currFrame; ///< last processed frame
 
@@ -70,6 +71,7 @@ private:
 
 	std::vector<cv::Rect> rois_;
 	std::vector<ObjDetector::DetectionInfo> result_;
+	std::vector<ObjDetector::DetectionInfo> allResult_; ///< used for debug/ROC experiments, will be removed in final release
 
 	time_t start_;
 	time_t end_;

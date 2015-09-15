@@ -118,7 +118,7 @@ int main(int argc, char* argv[]){
 
 					auto result = detector.detect(frame, fps);
 					if (dumpPatches)
-						detector.dumpStage1(patchPrefix);
+						detector.dumpStage2(patchPrefix);
 					putText(detector.currFrame, "FPS: " + std::to_string(fps), cv::Point(100, detector.currFrame.size().height - 100), CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 255, 0));
 
 					std::vector<cv::Rect> stage1rois = detector.getStage1Rois();

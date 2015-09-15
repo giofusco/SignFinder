@@ -133,7 +133,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame){
 			}
 			cv::imshow("Stage 1", tmp);
 		}
-
+		allResult_.clear();
         result_ = verifyROIs(cropped, rois_);
 	}
     return result_;
@@ -179,6 +179,8 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::verifyROIs(cv::Mat& frame, 
 
 		if ((prob_est[0] > params_.SVMThreshold))
 			result.push_back({ rois[r], prob_est[0] });
+		if (prob_est[0] > 0.)
+			allResult_.push_back({ rois[r], prob_est[0] });
 	}
 
 
@@ -191,6 +193,16 @@ void ObjDetector::dumpStage1(std::string prefix){
 		cnt++;
 		cv::Mat p = currFrame(r);
 		std::string fname = prefix+ "_" + std::to_string(counter_) + "_" + std::to_string(cnt) + ".png";
+		cv::imwrite(fname, p);
+	}
+}
+
+void ObjDetector::dumpStage2(std::string prefix){
+	int cnt = 0;
+	for (const auto& r : allResult_){
+		cnt++;
+		cv::Mat p = currFrame(r.roi);
+		std::string fname = prefix + "_" + std::to_string(counter_) + "_" + std::to_string(cnt) + "_"  + std::to_string(r.confidence) + ".png";
 		cv::imwrite(fname, p);
 	}
 }
