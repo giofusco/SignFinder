@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
    limitations under the License.
   
-Author: Giovanni Fusco - giofusco@ski.org
+Author: Giovanni Fusco - giofusco@ski.org & Ender Tekin
 
 */
 
@@ -68,7 +68,7 @@ private:
     const cv::Size minSz_;  //< min win size
     const cv::Size maxSz_;  //< max win size
     const float scaleFactor_;     //< scale factor
-    mutable cv::CascadeClassifier cascade_;		///< cascade classifier, mutable since cv::CascadeClassifier::detectMultiScale is not const, but does not change internal state of ObjDetector
+    mutable cv::CascadeClassifier cascade_;		//< cascade classifier, mutable since cv::CascadeClassifier::detectMultiScale is not const, but does not change internal state of ObjDetector
 };  // ObjDetector::CascadeDetector
 
 
@@ -79,7 +79,6 @@ public:
     /// Ctor
     /// @param[in] svmModelFileName name of file to load the svm model from
     /// @param[in] hogWinSize size of the window to calculate HoG
-    /// @param[in] svmThreshold detection threshold
     /// @throw std::runtime_error if unable to allocate memory of read the cascade file
     SVMClassifier(const std::string& svmModelFileName, const cv::Size& hogWinSize) throw (std::runtime_error):
     hogWinSz_(hogWinSize),
@@ -109,10 +108,8 @@ public:
     
     /*!
      * Verifies the ROIs detected in the first stage using SVM + HOG
-     * @param[in] frame frame to process
-     * @param[in] rois vector containing the candidate ROIs
-     * @param[in] svmThreshold minimum confidence threshold to accept an roi
-     * @return a vector of detections that passed the verification
+     * @param[in] patch patch to classify
+     * @return a pair of values indicating the estimated class and confidence of the patch.
      * @throw runtime error if unable to allocate memory for this stage
      */
     std::pair<int, double> classify(const cv::Mat& patch) const
@@ -177,8 +174,6 @@ void ObjDetector::init(const std::string& yamlConfigFile, const std::string& cla
     init();
 };
 
-//void setClassifiersFolder(std::string folder);    //UNUSED??
-
 ObjDetector::~ObjDetector() = default;
 
 /*!
@@ -201,8 +196,6 @@ void ObjDetector::init() throw(std::runtime_error)
     if (pCascadeDetector && pSVMClassifier) //this should be an assertion since we previosuly catch errors
         init_ = true;
 }
-
-
 
 /*!
 * Use 2-Stages object detector on the input frame.
@@ -231,40 +224,6 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, doub
 */
 std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool doTrack) throw (std::runtime_error)
 {
-//	result_.clear();
-//	if (params_.isInit()){
-//		if (params_.scalingFactor != 1 && params_.scalingFactor > 0)
-//			resize(frame, frame, cv::Size(frame.size().width * params_.scalingFactor, frame.size().height* params_.scalingFactor));
-//
-//		if (params_.flip)
-//			flip(frame, frame, 0);
-//
-//        if (params_.transpose)      
-//			frame = frame.t();
-//        
-//        frame.copyTo(currFrame);
-//        //cropping
-//        cv::Mat cropped;
-//        frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().height*params_.croppingFactors[1])).copyTo(cropped);
-//
-//		rois_.clear();
-//        cascade_.detectMultiScale(cropped, rois_, params_.cascadeScaleFactor, 0, 0, params_.cascadeMinWin, params_.cascadeMaxWin);
-//		groupRectangles(rois_, 1);
-//
-//		if (params_.showIntermediate){
-//			cv::imshow("Cropped Input", cropped);
-//			cv::Mat tmp;
-//			cropped.copyTo(tmp); // temporary copy to avoid changing pixels in the original image
-//			for (const auto& r : rois_){
-//				cv::rectangle(tmp, r, cv::Scalar(0, 255, 0), 2);
-//			}
-//			cv::imshow("Stage 1", tmp);
-//		}
-//		allResult_.clear();
-//        result_ = verifyROIs(cropped, rois_);
-//	}
-//    return result_;
-
     if (!params_.isInit())
     {
         throw std::runtime_error("OBJDETECTOR :: Parameters not initialized");
