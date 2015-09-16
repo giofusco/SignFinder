@@ -20,7 +20,11 @@ Author: Giovanni Fusco - giofusco@ski.org
 
 #include "ObjDetector.h"
 #include <exception>
-
+#include <iostream>
+#include <map>
+#include <string>
+#include "opencv2/core/core.hpp"
+#include "opencv2/highgui/highgui.hpp"
 
 
 std::map<std::string, std::string> parseOptions(int argc, char* argv[]){
