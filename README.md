@@ -57,7 +57,7 @@ The API documentation requires [Doxygen](http://www.stack.nl/~dimitri/doxygen/in
 
     >> cmake -DBUILD_DOCUMENTATION=ON ..
     
-This will create a `doc` make target. Documentation can then be built by 
+This will create a `doc` make target, and is ON by default. This also provides a build target `doc` such that documentation can also be built by 
 
     >> make doc
     
@@ -70,3 +70,19 @@ Alternatively, you can build it yourself using doxygen later using the doxygen c
     
 Running SignFinder
 ===================
+
+```
+USAGE: SignFinder -c configfile [-p prefix] [-m maxdim] [-s] [-d] [-f] [-t] [-n] [-o output] input
+  -1                          input. Either a file name, or a digit indicating webcam id                            
+  -c, --configFile            location of config file                         
+  -d, --debug=[false]         whether to show intermediate detection stage results                                         
+  -f, --flip=[false]          whether to flip the input image                 
+  -h, --help=[true]           print this message                              
+  -m, --maxdim=[640]          maximum dimension of the image to use while processing                              
+  -n, --notrack=[false]       whether to turn off tracking                    
+  -o, --output                if a name is specified, the detection results are saved to a video file given here
+  -p, --patchPrefix           prefix for dumping detected patches to disk if one is provided                         
+  -s, --saveFrames=[false]    whether to save frames                          
+  -t, --transpose=[false]     whether to transpose the input image            
+  -v, --version=[false]       version info                                    
+```

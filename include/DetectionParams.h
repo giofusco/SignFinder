@@ -61,10 +61,6 @@ public:
     int maxAgePostConfirmation; ///< max #of frames object a confirmed object can be missed without declaring lost.
     int nHangOverFrames;        ///< number of hangover frames during which detection must be confirmed
 
-	bool flip;					///< flip input image (used for landscape videos)
-	bool transpose;				///< transpose input image (used for landscape videos)
-	bool showIntermediate;		///< show debugging info
-
 private:
 	bool init_;					///< specifies if the parameters have been initialized or not
 

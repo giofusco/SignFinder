@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 2.8) 
-PROJECT(SignFinder)
+cmake_minimum_required(VERSION 3.0) 
+PROJECT(SignFinder VERSION 0.2)
 #set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
 set(CMAKE_CXX_FLAGS "-std=c++11" CACHE STRING "compile flags" FORCE)
@@ -68,6 +68,7 @@ file(INSTALL res DESTINATION ${OUTPUT_FOLDER})
 configure_file(
   "${HEADER_DIR}/version.h.in"
   "${PROJECT_BINARY_DIR}/version.h"
+  @ONLY
   )
 include_directories(${PROJECT_BINARY_DIR})
 

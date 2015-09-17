@@ -136,6 +136,7 @@ void DetectionParams::loadFromFile(const std::string& yamlConfigFile, const std:
         {
             n2 = n["width"];
             croppingFactors[0] = (n2.empty() ? 1.f : (float) n2);
+            
             n2 = n["height"];
             croppingFactors[1] = (n2.empty() ? 1.f : (float) n2);
         }
@@ -158,15 +159,6 @@ void DetectionParams::loadFromFile(const std::string& yamlConfigFile, const std:
         n = fs["nHangOverFrames"];
         nHangOverFrames = (n.empty() ? 3 : (int) n);
 
-        n = fs["Flip"];
-        flip = (n.empty() ? false : (int) n);
-        
-        n = fs["Transpose"];
-        transpose = (n.empty() ? false : (int) n);
-        
-        n = fs["ShowIntermediate"];
-        showIntermediate = (n.empty() ? false : (int) n);
-        
         init_ = true;
 	}
 

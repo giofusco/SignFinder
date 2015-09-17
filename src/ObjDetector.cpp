@@ -237,12 +237,6 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
     if (params_.scalingFactor != 1 && params_.scalingFactor > 0)
         resize(frame, frame, cv::Size(), params_.scalingFactor, params_.scalingFactor);
 
-    if (params_.flip)
-        flip(frame, frame, 0);
-
-    if (params_.transpose)
-        frame = frame.t();
-
     frame.copyTo(currFrame);
     //cropping
     cv::Mat cropped = frame( cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().height*params_.croppingFactors[1]) );
@@ -362,7 +356,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
             }
         }
     }
-    else
+    else    //no tracking
     {
         // Run cascade detector
         rois_ = pCascadeDetector->detect(cropped);
