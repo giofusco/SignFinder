@@ -1,6 +1,6 @@
 # README #
 
-For Windows installation instructions see "doc/Instructions_Wicab Sign Finder.pdf"
+Note: For Windows installation instructions, also see "doc/Instructions_Wicab Sign Finder.pdf" These are somewhat outdated, and we suggest you follow the instructions here.
 
 Dependencies
 =============
@@ -40,7 +40,7 @@ You can then compile and install the project using make
     >> make
     >> make install
 
-If building for OSX, you can generate Xcode projects using the `-GXcode` flag. These can then be build using Xcode or from the command line using the `xcodebuild` command, i.e., instead of make, use
+If building for OSX, you can generate Xcode projects using the `-GXcode` flag. These can then be built using Xcode or from the command line using the `xcodebuild` command, i.e., instead of make, use
 
     >> xcodebuild -project SignFinder.xcodeproj
 
@@ -48,20 +48,20 @@ If building for Windows, you can use [mingw](http://sourceforge.net/projects/tdm
 
 Documentation
 =====
-In addition to the build instructions in this file, you can find a tech report providing an overview of the algorithms in the build/doc folder after running cmake.
+In addition to the build instructions in this file, you can find a tech report providing an overview of the algorithms in the `doc/` folder.
 
 Building API documentation
 --------------------------
 
-The API documentation requires [Doxygen](http://www.stack.nl/~dimitri/doxygen/index.html) to be installed. This can be generated at build time via passing cmake the `BUILD_DOCUMENTATION` flag, e.g.,
+The API documentation requires [Doxygen](http://www.stack.nl/~dimitri/doxygen/index.html) to be installed. This can be set up at build time via passing cmake the `BUILD_DOCUMENTATION` flag, e.g.,
 
     >> cmake -DBUILD_DOCUMENTATION=ON ..
     
-This will create a `doc` make target, and is ON by default. This also provides a build target `doc` such that documentation can also be built by 
+This will create a `doc` make target, and is ON by default. This also provides a build target `doc` such that documentation can be built by 
 
     >> make doc
     
-The resulting html documentation will be put in `build/doc/html`. Just open the index.html file in any web browser.
+The resulting html documentation will be put in `build/doc/html`. Just open the index.html file in any web browser. Note that this is not part of the `all` target, so you will explicitly need to invoke it.
 
 Alternatively, you can build it yourself using doxygen later using the doxygen configuration file `Doxyfile` in `build/doc`. While in `build`,
 
@@ -71,18 +71,22 @@ Alternatively, you can build it yourself using doxygen later using the doxygen c
 Running SignFinder
 ===================
 
-```
-USAGE: SignFinder -c configfile [-p prefix] [-m maxdim] [-s] [-d] [-f] [-t] [-n] [-o output] input
-  -1                          input. Either a file name, or a digit indicating webcam id                            
-  -c, --configFile            location of config file                         
-  -d, --debug=[false]         whether to show intermediate detection stage results                                         
-  -f, --flip=[false]          whether to flip the input image                 
-  -h, --help=[true]           print this message                              
-  -m, --maxdim=[640]          maximum dimension of the image to use while processing                              
-  -n, --notrack=[false]       whether to turn off tracking                    
-  -o, --output                if a name is specified, the detection results are saved to a video file given here
-  -p, --patchPrefix           prefix for dumping detected patches to disk if one is provided                         
-  -s, --saveFrames=[false]    whether to save frames                          
-  -t, --transpose=[false]     whether to transpose the input image            
-  -v, --version=[false]       version info                                    
-```
+    USAGE: SignFinder -c configfile [-p prefix] [-m maxdim] [-s] [-d] [-f] [-t] [-n] [-o output] input    
+      -1                          input. Either a file name, or a digit indicating webcam id
+      -c, --configFile            location of config file
+      -d, --debug=[false]         whether to show intermediate detection stage results
+      -f, --flip=[false]          whether to flip the input image
+      -h, --help=[true]           print this message
+      -m, --maxdim=[640]          maximum dimension of the image to use while processing
+      -n, --notrack=[false]       whether to turn off tracking
+      -o, --output                if a name is specified, the detection results are saved to a video file given here
+      -p, --patchPrefix           prefix for dumping detected patches to disk if one is provided
+      -s, --saveFrames=[false]    whether to save frames
+      -t, --transpose=[false]     whether to transpose the input image
+      -v, --version=[false]       version info
+
+For example, to detect an EXIT sign in video.mpg, you would use:
+
+    SignFinder -c res/exit_sign_config.yaml video.mpg
+
+Please also see `Sign Finder Detection - Code Overview - <hash>.pdf` for a high level documentation of the algorithms.
