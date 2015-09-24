@@ -11,14 +11,14 @@ SVMFile: "restroom_sign_model.svm"       # SVM model
 minWinSize:
     width: 12
     height: 32
-CascadeScaleFactor: 1.4    # scale factor for multiscale detection 
+CascadeScaleFactor: 1.5    # scale factor for multiscale detection 
 
 maxWinSizeFactor: 10.       #specify largest search window as a multiple of minWinSize
 
 # HOG
 HOG_winSize:               # DO NOT CHANGE: this parameter should be changed only if the SVM is trained with a different window size 
-    width: 72
-    height: 192
+    width: 24
+    height: 64
 
 SVMThreshold: .5          # sets the SVM confidence threshold   
 

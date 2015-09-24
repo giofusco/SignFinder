@@ -13,6 +13,7 @@ set( NAME_SRC
     src/ObjDetector.cpp
     src/MedianFlowTracker.hpp
     src/MedianFlowTracker.cpp
+    src/svm.cpp
 )
 
 #Find OpenCV
