@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
             }
 
             // Run detector
-            auto result = detector.detect(frame, fps);
+            auto result = detector.detect(frame, fps, options.doTrack);
             if ( !options.patchPrefix.empty() )
             {
                 detector.dumpStage2(options.patchPrefix);
