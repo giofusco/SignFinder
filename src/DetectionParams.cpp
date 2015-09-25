@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Author: Giovanni Fusco - giofusco@ski.org & Ender Tekin
+Author: Giovanni Fusco - giofusco@ski.org
 
 */
 
@@ -32,7 +32,8 @@ init_(false)
 /*!
 * Constructor with initialization
 * @param[in] yamlConfigFile the full path to the configuration file to parse
-* \exception std::runtime_error error accessing or parsing the configuration file
+* @param[in] classifiersFolder the full path to the classifiers folder if not defined at runtime
+* @exception std::runtime_error error accessing or parsing the configuration file
 */
 DetectionParams::DetectionParams(const std::string& yamlConfigFile, const std::string& classifiersFolder) throw(std::runtime_error) :
 DetectionParams()
@@ -50,7 +51,8 @@ DetectionParams::~DetectionParams() = default;
 /*!
 * Initialize the parameters using a configuration file
 * @param[in] yamlConfigFile the full path to the configuration file to parse
-* @param[in] classifiersFolder the folder containing the classifiers to load
+* @param[in] classFolder the full path to the classifiers folder if not defined at runtime
+* @exception std::runtime_error error accessing or parsing the configuration file
 */
 void DetectionParams::loadFromFile(const std::string& yamlConfigFile, const std::string& classFolder) throw(std::runtime_error){
 
@@ -64,7 +66,7 @@ void DetectionParams::loadFromFile(const std::string& yamlConfigFile, const std:
         }
         //if the folder containing the classifiers is not specified read it from the config file
         if (classFolder.empty()){
-            this->classifiersFolder = (std::string)fs["ClassifiersFolder"];
+            classifiersFolder = (std::string)fs["ClassifiersFolder"];
             if (classifiersFolder.empty())
                 throw (std::runtime_error("CONFIG PARSER ERROR :: Classifiers Folder not specified. \n"));
         }

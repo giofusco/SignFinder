@@ -40,25 +40,25 @@ public:
 
     void loadFromFile(const std::string& yamlConfigFile, const std::string& classifiersFolder=std::string()) throw(std::runtime_error);
     
-	inline bool isInit() { return init_; }
+    inline bool isInit() { return init_; }  ///< @return true if parameters are properly initialized.
 
-	std::string classifiersFolder; ///< base directory containing the Adaboost and the SVM classifier
-	std::string configFileName;	///< full path to the configuration file
-	std::string cascadeFile;	///< Adaboost cascade classifier filename
-	std::string svmModelFile;	///< SVM model filename
+    std::string classifiersFolder;  ///< base directory containing the Adaboost and the SVM classifier
+    std::string configFileName;     ///< full path to the configuration file
+    std::string cascadeFile;        ///< Adaboost cascade classifier filename
+    std::string svmModelFile;       ///< SVM model filename
 
-	cv::Size hogWinSize;		///< windows size for HOG descriptor
-	cv::Size cascadeMinWin;		///< min window size for multi-scale detection
-	cv::Size cascadeMaxWin;		///< max window size for multi-scale detection 
+    cv::Size hogWinSize;            ///< windows size for HOG descriptor
+    cv::Size cascadeMinWin;         ///< min window size for multi-scale detection
+    cv::Size cascadeMaxWin;         ///< max window size for multi-scale detection
 
-	float cascadeMaxWinFactor;
+    //float cascadeMaxWinFactor;  ///< the scale of the maximum cascade window size (when cascadeMinWin is of scale 1)
 	float croppingFactors[2];	///< (0: width, 1: height)
 	float scalingFactor;		///< image rescaling factor (0., +inf)
 	float cascadeScaleFactor;	///< multiscale detection scaling factor
 	float SVMThreshold;			///< theshold for rejection of candidate ROIs
 
-    int maxAgePreConfirmation;  ///< max #of frames object can be missed before being confirmed.
-    int maxAgePostConfirmation; ///< max #of frames object a confirmed object can be missed without declaring lost.
+    int maxAgePreConfirmation;  ///< max number of frames object can be missed before being confirmed.
+    int maxAgePostConfirmation; ///< max number of frames object a confirmed object can be missed without declaring lost.
     int nHangOverFrames;        ///< number of hangover frames during which detection must be confirmed
 
 private:

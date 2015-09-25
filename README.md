@@ -71,8 +71,8 @@ Alternatively, you can build it yourself using doxygen later using the doxygen c
 Running SignFinder
 ===================
 
-    USAGE: SignFinder -c configfile [-p prefix] [-m maxdim] [-s] [-d] [-f] [-t] [-n] [-o output] input    
-      -1                          input. Either a file name, or a digit indicating webcam id
+    USAGE: SignFinder -c configfile -i input [-p prefix] [-m maxdim] [-s] [-d] [-f] [-t] [-n] [-o output]   
+      -i, --input                 input. Either a file name, or a digit indicating webcam id
       -c, --configFile            location of config file
       -d, --debug=[false]         whether to show intermediate detection stage results
       -f, --flip=[false]          whether to flip the input image
@@ -87,6 +87,6 @@ Running SignFinder
 
 For example, to detect an EXIT sign in video.mpg, you would use:
 
-    SignFinder -c res/exit_sign_config.yaml video.mpg
+    SignFinder -c res/exit_sign_config.yaml -i video.mpg
 
 Please also see `Sign Finder Detection - Code Overview - <hash>.pdf` for a high level documentation of the algorithms.

@@ -13,7 +13,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  
- Author: Giovanni Fusco - giofusco@ski.org
+ Author: Giovanni Fusco - giofusco@ski.org & Ender Tekin
  
  */
 
@@ -61,7 +61,7 @@ namespace
         {
             "{ h | help            | false       | print this message                                            }"
             "{ v | version         | false       | version info                                                  }"
-            "{ 1 |                 |             | input. Either a file name, or a digit indicating webcam id    }"
+            "{ i | input           |             | input. Either a file name, or a digit indicating webcam id    }"
             "{ c | configFile      |             | location of config file                                       }"
             "{ p | patchPrefix     |             | prefix for dumping detected patches to disk. If none, nothign is dumped}"
             "{ s | saveFrames      | false       | whether to save frames                                        }"
@@ -88,7 +88,8 @@ namespace
         
         Options opts;
         
-        opts.input = parser.get<std::string>("1");
+        opts.input = parser.get<std::string>("i");
+            std::cerr<<opts.input<< std::endl;
         if (opts.input.empty())
         {
             printUsage();
@@ -170,7 +171,8 @@ int main(int argc, char* argv[])
         cv::VideoCapture vc;
         if (options.input.size() == 1) //camera
         {
-            const int camIndex = options.input.front() - '0';
+            const int camIndex = (char) options.input.front() - '0';
+            std::cerr << camIndex << std::endl;
             if ( (camIndex < 0) || (camIndex > 9) )
             {
                 throw std::runtime_error("Parser Error :: Webcam index must be between 0..9");

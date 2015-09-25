@@ -24,7 +24,8 @@ Author: Giovanni Fusco - giofusco@ski.org & Ender Tekin
 #include <opencv2/imgproc/imgproc.hpp>
 #include <cstdint>
 
-/// @class cascade detector using lbp features. used as first stage detector
+/// @class ObjDetector::CascadeDetector
+/// cascade detector using lbp features, used as first stage detector
 class ObjDetector::CascadeDetector
 {
 public:
@@ -72,7 +73,8 @@ private:
 };  // ObjDetector::CascadeDetector
 
 
-/// @class svm detector using HoG features, used as second stage classifier
+/// @class ObjDetector::SVMClassifier
+/// svm detector using HoG features, used as second stage classifier
 class ObjDetector::SVMClassifier
 {
 public:
@@ -178,7 +180,7 @@ ObjDetector::~ObjDetector() = default;
 
 /*!
 * initializes the classifiers and the HOG feature extractor.
-* \exception std::runtime_error error loading one of the classfiers
+* @exception std::runtime_error error loading one of the classfiers
 */
 void ObjDetector::init() throw(std::runtime_error)
 {
@@ -199,9 +201,11 @@ void ObjDetector::init() throw(std::runtime_error)
 
 /*!
 * Use 2-Stages object detector on the input frame.
-* @param[in] frame
-* @param[out] FPS 
-* \return a vector of DetectionInfo containing information about the detections and the frame rate
+* @param[in] frame current frame to detect objects in
+* @param[out] FPS frames per second
+* @param[in] doTrack if true, use tracking, otherwise detection is independent between frames.
+* @return a vector of DetectionInfo containing information about the detections and the frame rate
+* @exception runtime_error if the detector is not properly initialized
 */
 std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, double& FPS, bool doTrack) throw (std::runtime_error)
 {
@@ -220,7 +224,8 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, doub
 /*!
 * Use 2-Stages object detector on the input frame.
 * @param[in] frame
-* \return a vector of DetectionInfo containing information about the detections 
+* @return a vector of DetectionInfo containing information about the detections
+* @exception runtime_error if the detector is not properly initialized
 */
 std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool doTrack) throw (std::runtime_error)
 {

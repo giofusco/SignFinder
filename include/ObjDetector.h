@@ -35,8 +35,8 @@ public:
     /// Structure containing detection information.
     struct DetectionInfo	
     {
-        cv::Rect roi;           //< detection location
-        double confidence;      //< detection confidence as estimated by the SVM
+        cv::Rect roi;           ///< detection location
+        double confidence;      ///< detection confidence as estimated by the SVM
     };
 
     /// Default constructor. The parameters are not initialized.
@@ -83,14 +83,14 @@ public:
     std::vector<DetectionInfo> getStage2Rois() const;
     
     /// saves ROIs coming from the first stage to disk
-    /// @param[in] prefox prefix of the file names to use when saving first stage results.
+    /// @param[in] prefix prefix of the file names to use when saving first stage results.
 	void dumpStage1(std::string prefix);
     
     /// saves ROIs coming from the second stage to disk
-    /// @param[in] prefox prefix of the file names to use hen saving second stage results.G
+    /// @param[in] prefix prefix of the file names to use hen saving second stage results.G
     void dumpStage2(std::string prefix);
 	
-	cv::Mat currFrame; //< last processed frame
+    cv::Mat currFrame; ///< last processed frame
 
 private:
 
