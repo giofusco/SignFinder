@@ -6,6 +6,13 @@
 ClassifiersFolder: "res/"    #folder containing the classifiers (used for desktop only)
 CascadeFile: "restroom_sign_cascade.xml"     # cascade classifier filename
 SVMFile: "restroom_sign_model.svm"       # SVM model 
+SVMFile2: "restroom_binary_model.svm"       # SVM model (stage 3)
+
+
+#tags associated with 3rd stage output
+posLabel: "M"
+negLabel: "W"
+
 
 # Cascade search window parameters. It can be changed, but it is a good idea to keep the same aspect ratio 
 minWinSize:
@@ -28,3 +35,5 @@ CroppingFactors:           # specify which section of the image to process. Crop
     height: .8
 
 ScaleFactor: 1.          # specify rescaling factor for cropped frames (helps with detection of small objects)
+
+
