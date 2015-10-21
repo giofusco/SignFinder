@@ -37,6 +37,7 @@ public:
     {
         cv::Rect roi;           ///< detection location
         double confidence;      ///< detection confidence as estimated by the SVM
+		int label;				///< label associated to the ROI
     };
 
     /// Default constructor. The parameters are not initialized.
@@ -104,6 +105,7 @@ private:
     class SVMClassifier;      //< second stage detector, HoG + SVM
     std::unique_ptr<CascadeDetector> pCascadeDetector;  //< ptr to first stage detector
     std::unique_ptr<SVMClassifier> pSVMClassifier;      //< ptr to second stage detector
+	std::unique_ptr<SVMClassifier> pSVMClassifier2;      //< ptr to third stage detector 
     
     DetectionParams params_;
     

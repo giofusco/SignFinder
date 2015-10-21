@@ -59,7 +59,7 @@ void DetectionParams::loadFromFile(const std::string& yamlConfigFile, const std:
 	try{
 		cv::FileStorage fs(yamlConfigFile, cv::FileStorage::READ);
 		configFileName = yamlConfigFile;
-        
+		        
         if (!fs.isOpened())
         {
             throw std::runtime_error("CONFIG PARSER ERROR :: Couldn't load configuration file: " + yamlConfigFile + "\n");
@@ -84,6 +84,16 @@ void DetectionParams::loadFromFile(const std::string& yamlConfigFile, const std:
         if (svmModelFile.empty())
             throw (std::runtime_error("CONFIG PARSER ERROR :: SVM Classifier not specified. \n"));
         svmModelFile = classifiersFolder + svmModelFile; //full filename
+
+		svmModelFile2 = (std::string)fs["SVMFile2"];
+		if (svmModelFile2.empty()){
+			//throw (std::runtime_error("CONFIG PARSER ERROR :: SVM Classifier not specified. \n"));
+			use3Stages_ = false;
+		}
+		else{
+			svmModelFile2 = classifiersFolder + svmModelFile2; //full filename
+			use3Stages_ = true;
+		}
 
         cv::FileNode n, n2;
         n = fs["minWinSize"];

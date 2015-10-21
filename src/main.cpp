@@ -272,10 +272,18 @@ int main(int argc, char* argv[])
                     putText(detector.currFrame, to_string(res.roi.size()), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_CASCADE_DETECTION);
                 }
             }
-            //plotting detecions and confidence values
+            //plotting detections and confidence values
             for (const auto& res : result)
             {
-                cv::rectangle(detector.currFrame, res.roi, COLOR_VERIFIED_SIGN, 2);
+				if (res.label == 0)
+					cv::rectangle(detector.currFrame, res.roi, COLOR_VERIFIED_SIGN, 2);
+				else{
+					if (res.label == 1)
+						cv::rectangle(detector.currFrame, res.roi, cv::Scalar(255,0,0), 2);
+					else
+						cv::rectangle(detector.currFrame, res.roi, cv::Scalar(125, 0, 125), 2);
+				}
+					
                 putText(detector.currFrame, "p=" + std::to_string(res.confidence), res.roi.br(), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_VERIFIED_SIGN);
                 putText(detector.currFrame, to_string(res.roi.size()), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_VERIFIED_SIGN);
 				if (!options.roisFile.empty()){
