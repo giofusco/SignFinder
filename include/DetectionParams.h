@@ -63,12 +63,15 @@ public:
     int nHangOverFrames;        ///< number of hangover frames during which detection must be confirmed
 	
 	inline bool useThreeStages() { return use3Stages_; }
+	std::vector < std::string > labels;
 
 private:
 	bool init_;					///< specifies if the parameters have been initialized or not
 	bool use3Stages_;			///< specifies whether to use an additional verification step 
 	void fixPathString(std::string& instring); ///< fix path strings according to the OS
-
+	
+	
+	
 	inline char separator(){
 		#ifdef _WIN32
 			return '\\';

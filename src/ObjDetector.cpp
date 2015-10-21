@@ -386,9 +386,9 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 		for (const auto& det : result){
 			auto res = pSVMClassifier2->classify(cropped(det.roi));
 			if ((1 == res.first) && (res.second > params_.SVMThreshold)) //svm labeled +1
-				result2.push_back({ det.roi, res.second, 1 });
+				result2.push_back({ det.roi, res.second, 1, params_.labels.at(1)});
 			else
-				result2.push_back({ det.roi, res.second, -1 });
+				result2.push_back({ det.roi, res.second, -1, params_.labels.at(0)});
 		}
 	
 		return result2;

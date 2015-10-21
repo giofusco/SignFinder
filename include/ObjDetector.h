@@ -37,7 +37,8 @@ public:
     {
         cv::Rect roi;           ///< detection location
         double confidence;      ///< detection confidence as estimated by the SVM
-		int label;				///< label associated to the ROI
+		int iLabel;				///< label (-1, 1 if 3 stages, 0 otherwise) associated to the ROI
+		std::string sLabel;		///< string associated to the label
     };
 
     /// Default constructor. The parameters are not initialized.
