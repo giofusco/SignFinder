@@ -19,6 +19,7 @@
 
 
 #include <exception>
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <string>
@@ -36,6 +37,8 @@ namespace
         std::string input;              // input file stream to process
         std::string output;             // name of output file if one is given
         std::string patchPrefix;        // if non-empty, dump patches to disk with this prefix
+		std::string roisFile;			// if non-empty, saves detection ROIs to the specified file
+		std::string label;				// label for the ROIs
         int maxDim;                     // maximum dimension of the image in pixels
         bool isFlipped;					//< flip input image if true (used for landscape videos)
         bool isTransposed;				//< transpose input image if true (used for landscape videos)
@@ -47,7 +50,7 @@ namespace
     /// Prints basic usage to terminal
     inline void printUsage()
     {
-        std::cerr << "USAGE: SignFinder -c configfile [-p prefix] [-m maxdim] [-s] [-d] [-f] [-t] [-n] [-o output] input" << std::endl;
+        std::cerr << "USAGE: SignFinder -c configfile [-p prefix] [-m maxdim] [-r roisFilename] [-s] [-d] [-f] [-t] [-n] [-o output] -i input" << std::endl;
     }
     
     /// Parses command line options
@@ -71,6 +74,8 @@ namespace
             "{ n | notrack         | false       | whether to turn off tracking                                  }"
             "{ m | maxdim          | 640         | maximum dimension of the image to use while processing.       }"
             "{ o | output          |             | if a name is specified, the detection results are saved to a video file given here.}"
+			"{ r | roisFile        |             | saves detected rois to a text file given here.                }"
+			"{ l | label           |             | specify label for the ROIs.                                   }"		
         };
         cv::CommandLineParser parser(argc, argv, keys);
         if ( (1 == argc) || (parser.get<bool>("h")) )
@@ -104,6 +109,8 @@ namespace
         
         opts.output = parser.get<std::string>("output");
         opts.patchPrefix = parser.get<std::string>("p");
+		opts.roisFile = parser.get<std::string>("r");
+		opts.label = parser.get<std::string>("l");
         opts.maxDim = parser.get<int>("m");
         opts.doSaveFrames = parser.get<bool>("s");
         opts.doShowIntermediate = parser.get<bool>("d");
@@ -204,12 +211,27 @@ int main(int argc, char* argv[])
         int frameno = 0;
         double fps = 0;
         cv::VideoWriter vw;
+
+		std::ofstream roisFile;
+		if (!options.roisFile.empty()){
+			roisFile.open(options.roisFile);
+			if (!roisFile.is_open())
+				throw std::runtime_error("Unable to open ROIs file.");
+			roisFile << options.input << "\n";
+			roisFile << options.label << "\n";
+		}
+		
+
         while ( vc.read(frame) )
         {
             ++frameno;
-            
+			
             const float scaleFactor = (float) options.maxDim / (float) std::max( frame.cols, frame.rows );
             cv::resize(frame, frame, cv::Size(), scaleFactor, scaleFactor);
+
+			if ((frameno == 1) && roisFile.is_open())
+				roisFile << frame.size().height << " " << frame.size().width << "\n";
+
             if ( !vw.isOpened() && !options.output.empty() )
             {
                 std::cerr << "Saving output frames to video: " << options.output << std::endl;
@@ -256,6 +278,10 @@ int main(int argc, char* argv[])
                 cv::rectangle(detector.currFrame, res.roi, COLOR_VERIFIED_SIGN, 2);
                 putText(detector.currFrame, "p=" + std::to_string(res.confidence), res.roi.br(), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_VERIFIED_SIGN);
                 putText(detector.currFrame, to_string(res.roi.size()), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_VERIFIED_SIGN);
+				if (!options.roisFile.empty()){
+					roisFile << frameno << " " << res.roi.tl().x << " " << res.roi.tl().y << " " << res.roi.br().x << " " << res.roi.br().y  
+						<< " " << res.confidence << " " << options.label << "\n";
+				}
             }
             cv::imshow("Detection", detector.currFrame);
             if (options.doSaveFrames)
