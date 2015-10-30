@@ -59,7 +59,7 @@ public:
     /// @return a set of detections
     /// TODO: even if doTrack is false, we can use tracking to see which detections may correspond to which previous detections
     /// @throw std::runtime_error if the classifiers have not been successfully initialized
-    std::vector<DetectionInfo> detect(cv::Mat& frame, bool doTrack=true) throw (std::runtime_error);
+    std::vector<DetectionInfo> detect(cv::Mat& frame, bool doTrack=true, bool refine=false) throw (std::runtime_error);
     
     /// detects SIGNs using the detectors initialized via the vonfiguraion file
     /// @param[in] frame input image
@@ -68,7 +68,7 @@ public:
     /// @return a set of detections
     /// TODO: even if doTrack is false, we can use tracking to see which detections may correspond to which previous detections
     /// @throw std::runtime_error if the classifiers have not been successfully initialized
-	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS, bool doTrack=true) throw (std::runtime_error);
+	std::vector<DetectionInfo> detect(cv::Mat& frame, double& FPS, bool doTrack=true, bool refine=false) throw (std::runtime_error);
     
     /// initializes the parameters using the file in input.
     /// @param[in] yamlConfigFile config file used to load parameters from
@@ -92,13 +92,15 @@ public:
     /// @param[in] prefix prefix of the file names to use hen saving second stage results.G
     void dumpStage2(std::string prefix);
 	
-    cv::Mat currFrame; ///< last processed frame
+    cv::Mat currFrame; ///< last processed frame s
 
 private:
 
 	ObjDetector(const ObjDetector& that) = delete; //disable copy constructor
 
 	void init() throw (std::runtime_error);	///< initializes the classifiers
+
+	std::vector<DetectionInfo> refineDetections(std::vector<DetectionInfo> rois, float scale);
 
 	bool init_;
 
@@ -109,6 +111,7 @@ private:
 	std::unique_ptr<SVMClassifier> pSVMClassifier2;      //< ptr to third stage detector 
     
     DetectionParams params_;
+	cv::Mat cropped_;
     
     struct TrackingInfo
     {

@@ -45,12 +45,13 @@ namespace
         bool doShowIntermediate;        //< show debugging info
         bool doSaveFrames;              //< if true, save frames to disk
         bool doTrack;                   //< whether the detector should us tracking.
+		bool refineROIs;				//< whether to refine the ROIs using a finer scale step.
     };
     
     /// Prints basic usage to terminal
     inline void printUsage()
     {
-        std::cerr << "USAGE: SignFinder -c configfile [-p prefix] [-m maxdim] [-r roisFilename] [-s] [-d] [-f] [-t] [-n] [-o output] -i input" << std::endl;
+        std::cerr << "USAGE: SignFinder -c configfile [-p prefix] [-m maxdim] [-r roisFilename] [-z] [-s] [-d] [-f] [-t] [-n] [-o output] -i input" << std::endl;
     }
     
     /// Parses command line options
@@ -75,7 +76,8 @@ namespace
             "{ m | maxdim          | 640         | maximum dimension of the image to use while processing.       }"
             "{ o | output          |             | if a name is specified, the detection results are saved to a video file given here.}"
 			"{ r | roisFile        |             | saves detected rois to a text file given here.                }"
-			"{ l | label           |             | specify label for the ROIs.                                   }"		
+			"{ l | label           |             | specify label for the ROIs.                                   }"	
+			"{ z | refine rois     | false       | whether to refine ROIs using a finer scale step				 }"
         };
         cv::CommandLineParser parser(argc, argv, keys);
         if ( (1 == argc) || (parser.get<bool>("h")) )
@@ -117,6 +119,7 @@ namespace
         opts.isTransposed = parser.get<bool>("t");
         opts.isFlipped = parser.get<bool>("f");
         opts.doTrack = !parser.get<bool>("n");
+		opts.refineROIs = parser.get<bool>("z");
         
 #ifndef NDEBUG
         //list arguments and parameters
@@ -248,7 +251,7 @@ int main(int argc, char* argv[])
             }
 
             // Run detector
-            auto result = detector.detect(frame, fps, options.doTrack);
+            auto result = detector.detect(frame, fps, options.doTrack, options.refineROIs);
             if ( !options.patchPrefix.empty() )
             {
                 detector.dumpStage2(options.patchPrefix);
@@ -277,7 +280,7 @@ int main(int argc, char* argv[])
             {
 				if (res.iLabel != 0){
 					if (res.iLabel == -1)
-						cv::rectangle(detector.currFrame, res.roi, cv::Scalar(255,0,255), 2);
+						cv::rectangle(detector.currFrame, res.roi, cv::Scalar(0,0,255), 2);
 					else 
 						cv::rectangle(detector.currFrame, res.roi, cv::Scalar(255, 0, 0), 2);
 				}

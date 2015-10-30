@@ -61,7 +61,46 @@ public:
 	{
 		std::vector<cv::Rect> rois;
 		cascade_.detectMultiScale(frame, rois, scaleFactor_, 0, 0, minSz_, maxSz_);
+		groupRectangles(rois, 1);
+		return rois;
+	}
 
+	/*!
+	* First stage of cascade classifier without grouping, overrides the min & max windows size
+	* @param[in] frame frame to process
+	* @return a vector of detections candidates
+	*/
+	std::vector<cv::Rect> detectNoGrouping(const cv::Mat& frame, float scaleFactor, cv::Size minSize, cv::Size maxSize) const
+	{
+		std::vector<cv::Rect> rois;
+		cascade_.detectMultiScale(frame, rois, scaleFactor, 0, 0, minSize, maxSize);
+		return rois;
+	}
+
+	/*!
+	* First stage of cascade classifier
+	* @param[in] frame frame to process
+	* @param[in] scale factor for multiscale detection
+	* @return a vector of detections candidates
+	*/
+	std::vector<cv::Rect> detect(const cv::Mat& frame, float scaleFactor) const
+	{
+		std::vector<cv::Rect> rois;
+		cascade_.detectMultiScale(frame, rois, scaleFactor, 0, 0, minSz_, maxSz_);
+		groupRectangles(rois, 1);
+		return rois;
+	}
+	
+	/*!
+	* First stage of cascade classifier, overrides the default min & max search windows sizes
+	* @param[in] frame frame to process
+	* @param[in] scale factor for multiscale detection
+	* @return a vector of detections candidates
+	*/
+	std::vector<cv::Rect> detect(const cv::Mat& frame, float scaleFactor, cv::Size minSize, cv::Size maxSize) const
+	{
+		std::vector<cv::Rect> rois;
+		cascade_.detectMultiScale(frame, rois, scaleFactor, 0, 0, minSize, maxSize);
 		groupRectangles(rois, 1);
 		return rois;
 	}
@@ -211,13 +250,13 @@ void ObjDetector::init() throw(std::runtime_error)
 * @return a vector of DetectionInfo containing information about the detections and the frame rate
 * @exception runtime_error if the detector is not properly initialized
 */
-std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, double& FPS, bool doTrack) throw (std::runtime_error)
+std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, double& FPS, bool doTrack, bool refine) throw (std::runtime_error)
 {
 	//measure delta_T
 	time_t end;
 	if (counter_ == 0)
 		time(&start_);
-	auto result = detect(frame, doTrack);
+	auto result = detect(frame, doTrack, refine);
 	time(&end);
 	counter_++;
 	double sec = difftime(end, start_);
@@ -230,8 +269,9 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, doub
 * @param[in] frame
 * @return a vector of DetectionInfo containing information about the detections
 * @exception runtime_error if the detector is not properly initialized
+* @TODO: bring out the refinement step parameter
 */
-std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool doTrack) throw (std::runtime_error)
+std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool doTrack, bool refine) throw (std::runtime_error)
 {
 	if (!params_.isInit())
 	{
@@ -248,7 +288,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 
 	frame.copyTo(currFrame);
 	//cropping
-	cv::Mat cropped = frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().height*params_.croppingFactors[1]));
+	cropped_ = frame(cv::Rect(0, 0, frame.size().width * params_.croppingFactors[0], frame.size().height*params_.croppingFactors[1]));
 
 	std::vector<DetectionInfo> result;
 
@@ -259,7 +299,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 		// track all objects that were previously detected
 		if (!secondStageOutputs_.empty()) //objects being tracked
 		{
-			cv::cvtColor(cropped, grayFrame, CV_BGR2GRAY);
+			cv::cvtColor(cropped_, grayFrame, CV_BGR2GRAY);
 			for (auto it = secondStageOutputs_.begin(); it != secondStageOutputs_.end();)
 			{
 				it->roi = trackMedianFlow(it->roi, prevFrame_, grayFrame);
@@ -269,7 +309,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 					continue;
 				}
 				// attempt to confirm detections via svm.
-				auto res = pSVMClassifier->classify(cropped(it->roi));  //TODO: If SVM is using grayscale, we should just pass it the grayscale image to reduce computation
+				auto res = pSVMClassifier->classify(cropped_(it->roi));  //TODO: If SVM is using grayscale, we should just pass it the grayscale image to reduce computation
 				it->confidence = res.second;
 				if ((1 == res.first) && (res.second > params_.SVMThreshold)) //svm confirms detection
 				{
@@ -284,19 +324,26 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 		}
 
 		// Run cascade detector
-		rois_ = pCascadeDetector->detect(cropped);
+		rois_ = pCascadeDetector->detect(cropped_);
 		std::vector<DetectionInfo> newDetections;
 		for (const auto& det : rois_)
 		{
-			auto res = pSVMClassifier->classify(cropped(det));
+			auto res = pSVMClassifier->classify(cropped_(det));
 			if ((1 == res.first) && (res.second > params_.SVMThreshold)) //svm confirms detection
 			{
 				newDetections.push_back({ det, res.second });
 			}
 		}
-
+		
+		//std::cerr << "before refine\n";
+		if (refine){
+			//std::cerr << "size of new det: " << newDetections.size() << std::endl;
+			newDetections = refineDetections(newDetections, 1.25);
+		}
+		//std::cerr << "refine\n";
 		// Combine detections
 		auto overlaps = [](const cv::Rect& r1, const cv::Rect& r2){return ((r1 & r2).area() > .5 * std::min(r1.area(), r2.area())); };   //two rectangles overlap if their intersection is greater than half the smaller
+		
 		for (auto& obj : secondStageOutputs_)
 		{
 			for (auto itDet = newDetections.begin(); itDet != newDetections.end();)
@@ -315,6 +362,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 				++itDet;
 			}
 		}
+		//std::cerr << "combine\n";
 
 		// prune old detections, update the number oftimes new detections have been seen
 		for (auto it = secondStageOutputs_.begin(); it != secondStageOutputs_.end();)
@@ -343,6 +391,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 				result.push_back({ obj.roi, obj.confidence, 0 });
 			}
 		}
+		//std::cerr << "confirmed\n";
 
 		// add unmatched new detections
 		for (const auto& det : newDetections)
@@ -357,7 +406,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 		{
 			if (grayFrame.empty())  //no objects were tracked before
 			{
-				cv::cvtColor(cropped, prevFrame_, CV_BGR2GRAY);
+				cv::cvtColor(cropped_, prevFrame_, CV_BGR2GRAY);
 			}
 			else
 			{
@@ -368,29 +417,33 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 	else    //no tracking
 	{
 		// Run cascade detector
-		rois_ = pCascadeDetector->detect(cropped);
+		rois_ = pCascadeDetector->detect(cropped_);
 		for (const auto& det : rois_)
 		{
-			auto res = pSVMClassifier->classify(cropped(det));
+			auto res = pSVMClassifier->classify(cropped_(det));
 			if ((1 == res.first) && (res.second > params_.SVMThreshold)) //svm confirms detection
 			{
 				result.push_back({ det, res.second, 0 });
 			}
 		}
+		if (refine)
+			result = refineDetections(result, 1.5);
+
 	}
 
+	
+//	std::cerr << "size of filtered results: " << result.size() << std::endl;
 
 	//if has a 3rd stage, classify the ROIs
 	if (params_.useThreeStages()){
 		std::vector<DetectionInfo> result2;
 		for (const auto& det : result){
-			auto res = pSVMClassifier2->classify(cropped(det.roi));
+			auto res = pSVMClassifier2->classify(cropped_(det.roi));
 			if ((1 == res.first) && (res.second > params_.SVMThreshold)) //svm labeled +1
 				result2.push_back({ det.roi, res.second, 1, params_.labels.at(1)});
 			else
 				result2.push_back({ det.roi, res.second, -1, params_.labels.at(0)});
 		}
-	
 		return result2;
 	}
 
@@ -426,4 +479,76 @@ void ObjDetector::dumpStage2(std::string prefix){
 		std::string fname = prefix + "_" + std::to_string(counter_) + "_" + std::to_string(cnt) + "_" + std::to_string(r.confidence) + ".png";
 		cv::imwrite(fname, p);
 	}
+}
+
+std::vector<ObjDetector::DetectionInfo> ObjDetector::refineDetections(std::vector<DetectionInfo> rois, float scale){
+	
+	//std::cerr << "Frame # " << this->counter_ << std::endl;
+
+	std::vector<DetectionInfo> refined_rois;
+	for (const auto& r : rois){
+	
+		//std::cerr << r.roi << std::endl;
+		
+		int horSpan = floor(r.roi.width / 2 * scale);
+		int vertSpan = floor(r.roi.height / 2 * scale);
+		int new_x = r.roi.x - horSpan;
+		int new_y = r.roi.y - vertSpan;
+		if (new_x < 0)
+			new_x = 0;
+		if (new_y < 0)
+			new_y = 0;
+		
+		int new_width = r.roi.width + 2*horSpan;
+		int new_height = r.roi.height + 2*vertSpan;
+
+		if (new_x + new_width > cropped_.size().width){
+			new_width = cropped_.size().width - new_x;
+		}
+		if (new_y + new_height > cropped_.size().height){
+			new_height = cropped_.size().height - new_y;
+		}
+		
+		cv::Mat patch = cropped_(cv::Rect(new_x,new_y,new_width, new_height));
+		//imshow("Patch", patch);
+		//std::cerr << "# " << counter_ << std::endl;
+		//std::vector<cv::Rect> det = pCascadeDetector->detectNoGrouping(patch, 1.02, r.roi.size(), patch.size());
+		std::vector<cv::Rect> det = pCascadeDetector->detect(patch, 1.01, r.roi.size(), patch.size());
+
+		//std::cerr << "Size of det: " << det.size() << std::endl;
+
+		std::vector<DetectionInfo> result;
+
+		for (const auto& d : det){
+			auto res = pSVMClassifier->classify(patch(d));  //TODO: If SVM is using grayscale, we should just pass it the grayscale image to reduce computation
+			
+			if ((1 == res.first) && (res.second > params_.SVMThreshold)){ //svm confirms detection
+				//cv::Rect tmp_roi(d.x + new_x, d.y + new_y, d.width, d.height);
+				cv::Rect tmp_roi(d.x + new_x, d.y + new_y, d.width, d.height);
+				result.push_back({ tmp_roi, res.second, 0 });
+			}
+		}
+
+		//find roi with max confidence
+		float max_conf = -1;
+		std::vector<ObjDetector::DetectionInfo>::iterator best_it;
+		std::vector<ObjDetector::DetectionInfo>::iterator it = result.begin();
+		for (; it != result.end(); ++it){
+			if (it->confidence > max_conf){
+				max_conf = it->confidence;
+				best_it = it;
+			}
+		}
+		if (max_conf > 0)
+			refined_rois.push_back(*best_it);
+		
+		//refined_rois = result; //DEBUG
+	}
+	//std::cerr << "size of ref. " << refined_rois.size() << std::endl;
+
+	
+	
+
+	return refined_rois;
+
 }
