@@ -101,6 +101,7 @@ private:
 	void init() throw (std::runtime_error);	///< initializes the classifiers
 
 	std::vector<DetectionInfo> refineDetections(std::vector<DetectionInfo> rois, float scale);
+	DetectionInfo refineDetection(cv::Rect roi, float scale);
 
 	bool init_;
 

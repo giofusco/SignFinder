@@ -299,6 +299,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 		// track all objects that were previously detected
 		if (!secondStageOutputs_.empty()) //objects being tracked
 		{
+			
 			cv::cvtColor(cropped_, grayFrame, CV_BGR2GRAY);
 			for (auto it = secondStageOutputs_.begin(); it != secondStageOutputs_.end();)
 			{
@@ -313,7 +314,19 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 				it->confidence = res.second;
 				if ((1 == res.first) && (res.second > params_.SVMThreshold)) //svm confirms detection
 				{
-					it->age = 0;
+					//did the patch pass the SVM test? Then refine it. 
+					if (refine){
+						DetectionInfo refRoi = refineDetection(it->roi, 1.1);
+						std::cerr << "Conf: " << refRoi.confidence << std::endl;
+						if (refRoi.confidence > 0){
+							it->age = 0;
+							it->confidence = refRoi.confidence;
+							it->roi = refRoi.roi;
+						}
+						else{
+							++it->age;   //increase age
+						}
+					}
 				}
 				else    //svm did not classify patch as foreground
 				{
@@ -337,8 +350,8 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 		
 		//std::cerr << "before refine\n";
 		if (refine){
-			//std::cerr << "size of new det: " << newDetections.size() << std::endl;
-			newDetections = refineDetections(newDetections, 1.25);
+			std::cerr << "size of new det: " << newDetections.size() << std::endl;
+			newDetections = refineDetections(newDetections, 1.1);
 		}
 		//std::cerr << "refine\n";
 		// Combine detections
@@ -427,7 +440,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 			}
 		}
 		if (refine)
-			result = refineDetections(result, 1.5);
+			result = refineDetections(result, 1.1);
 
 	}
 
@@ -550,5 +563,75 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::refineDetections(std::vecto
 	
 
 	return refined_rois;
+
+}
+
+
+ObjDetector::DetectionInfo ObjDetector::refineDetection(cv::Rect roi , float scale){
+
+	//std::cerr << "Frame # " << this->counter_ << std::endl;
+
+	DetectionInfo refined_roi;
+	
+
+		//std::cerr << r.roi << std::endl;
+
+		int horSpan = floor(roi.width / 2 * scale);
+		int vertSpan = floor(roi.height / 2 * scale);
+		int new_x = roi.x - horSpan;
+		int new_y = roi.y - vertSpan;
+		if (new_x < 0)
+			new_x = 0;
+		if (new_y < 0)
+			new_y = 0;
+
+		int new_width = roi.width + 2 * horSpan;
+		int new_height = roi.height + 2 * vertSpan;
+
+		if (new_x + new_width > cropped_.size().width){
+			new_width = cropped_.size().width - new_x;
+		}
+		if (new_y + new_height > cropped_.size().height){
+			new_height = cropped_.size().height - new_y;
+		}
+
+		cv::Mat patch = cropped_(cv::Rect(new_x, new_y, new_width, new_height));
+		cv::imshow("Patch", patch);
+		//std::cerr << "# " << counter_ << std::endl;
+		//std::vector<cv::Rect> det = pCascadeDetector->detectNoGrouping(patch, 1.02, r.roi.size(), patch.size());
+		std::vector<cv::Rect> det = pCascadeDetector->detect(patch, 1.01, roi.size(), patch.size());
+
+		//std::cerr << "Size of det: " << det.size() << std::endl;
+
+		std::vector<DetectionInfo> result;
+
+		for (const auto& d : det){
+			auto res = pSVMClassifier->classify(patch(d));  //TODO: If SVM is using grayscale, we should just pass it the grayscale image to reduce computation
+
+			if ((1 == res.first) && (res.second > params_.SVMThreshold)){ //svm confirms detection
+				//cv::Rect tmp_roi(d.x + new_x, d.y + new_y, d.width, d.height);
+				cv::Rect tmp_roi(d.x + new_x, d.y + new_y, d.width, d.height);
+				result.push_back({ tmp_roi, res.second, 0 });
+			}
+		}
+
+		//find roi with max confidence
+		float max_conf = -1;
+		std::vector<ObjDetector::DetectionInfo>::iterator best_it;
+		std::vector<ObjDetector::DetectionInfo>::iterator it = result.begin();
+		for (; it != result.end(); ++it){
+			if (it->confidence > max_conf){
+				max_conf = it->confidence;
+				best_it = it;
+			}
+		}
+		if (max_conf > 0)
+			refined_roi = { best_it->roi, max_conf, 0 };
+		else
+			refined_roi = { roi, -1, 0 }; 
+		//refined_rois = result; //DEBUG
+	
+	//std::cerr << "size of ref. " << refined_rois.size() << std::endl;
+	return refined_roi;
 
 }
