@@ -92,7 +92,8 @@ public:
     /// @param[in] prefix prefix of the file names to use hen saving second stage results.G
     void dumpStage2(std::string prefix);
 	
-    cv::Mat currFrame; ///< last processed frame s
+    cv::Mat currFrame; ///< last processed frame 
+	std::vector<DetectionInfo> rawRois;        //< raw detections (used for debugging of refinement)
 
 private:
 
@@ -124,6 +125,7 @@ private:
     
     cv::Mat prevFrame_;
     
+	
     std::vector<cv::Rect> rois_;        //< first stage outputs
     std::vector<TrackingInfo> secondStageOutputs_;  //< second stage outputs, objects that are potentially being tracked
 

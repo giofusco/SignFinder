@@ -276,31 +276,55 @@ int main(int argc, char* argv[])
                 }
             }
             //plotting detections and confidence values
+			cv::Mat tmpFrame;
+			detector.currFrame.copyTo(tmpFrame);
             for (const auto& res : result)
             {
 				if (res.iLabel != 0){
 					if (res.iLabel == -1)
-						cv::rectangle(detector.currFrame, res.roi, cv::Scalar(0,0,255), 2);
+						cv::rectangle(tmpFrame, res.roi, cv::Scalar(0, 0, 255), 2);
 					else 
-						cv::rectangle(detector.currFrame, res.roi, cv::Scalar(255, 0, 0), 2);
+						cv::rectangle(tmpFrame, res.roi, cv::Scalar(255, 0, 0), 2);
 				}
-				else cv::rectangle(detector.currFrame, res.roi, COLOR_VERIFIED_SIGN, 2);
+				else cv::rectangle(tmpFrame, res.roi, COLOR_VERIFIED_SIGN, 2);
 				
 				if (res.iLabel != 0)
-					putText(detector.currFrame, res.sLabel, res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_RED);
+					putText(tmpFrame, res.sLabel, res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_RED);
 				else
-					putText(detector.currFrame, to_string(res.roi.size()), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_VERIFIED_SIGN);
-                putText(detector.currFrame, "p=" + std::to_string(res.confidence), res.roi.br(), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_VERIFIED_SIGN);
+					putText(tmpFrame, to_string(res.roi.size()), res.roi.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_VERIFIED_SIGN);
+				putText(tmpFrame, "p=" + std::to_string(res.confidence), res.roi.br(), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_VERIFIED_SIGN);
                 
 				if (!options.roisFile.empty()){
 					roisFile << frameno << " " << res.roi.tl().x << " " << res.roi.tl().y << " " << res.roi.br().x << " " << res.roi.br().y  
-						<< " " << res.confidence << " " << options.label << "\n";
+						<< " " << res.roi.area() << " " << res.confidence << " " << options.label << "\n";
 				}
             }
-            cv::imshow("Detection", detector.currFrame);
+			cv::imshow("Detection", tmpFrame);
             if (options.doSaveFrames)
             {
-                cv::imwrite(std::string("frame_" + std::to_string(frameno) + ".png"), detector.currFrame);
+				//add leading zeros to frameno
+				std::string fn;
+				if (frameno < 10)
+					fn = "000";
+				else if (frameno < 100)
+					fn = "00";
+				else if (frameno < 1000)
+					fn = "0";
+				fn = fn + std::to_string(frameno);
+
+				if (options.refineROIs){
+					//plot raw rois (green) and refined ones (red), make video darker. add leading zeros to frameno
+					cv::Mat frame = detector.currFrame;
+					frame = frame + cv::Scalar(-100, -100, -100);
+					for (const auto& res : detector.rawRois)
+						cv::rectangle(frame, res.roi, cv::Scalar(0, 255, 0), 2);
+					for (const auto& res : result)
+						cv::rectangle(frame, res.roi, cv::Scalar(0, 0, 255), 2);
+					cv::imshow("Refinement Output", frame);
+					cv::imwrite(std::string("frame_" + fn + ".png"), frame);
+				}
+				else
+					cv::imwrite(std::string("frame_" + fn + ".png"), tmpFrame);
             }
             keypress = cv::waitKey(1);
             

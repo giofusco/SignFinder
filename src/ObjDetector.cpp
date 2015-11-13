@@ -316,8 +316,8 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 				{
 					//did the patch pass the SVM test? Then refine it. 
 					if (refine){
-						DetectionInfo refRoi = refineDetection(it->roi, 1.1);
-						std::cerr << "Conf: " << refRoi.confidence << std::endl;
+						DetectionInfo refRoi = refineDetection(it->roi, 1.5);
+						//std::c err << "Conf: " << refRoi.confidence << std::endl;
 						if (refRoi.confidence > 0){
 							it->age = 0;
 							it->confidence = refRoi.confidence;
@@ -350,8 +350,8 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 		
 		//std::cerr << "before refine\n";
 		if (refine){
-			std::cerr << "size of new det: " << newDetections.size() << std::endl;
-			newDetections = refineDetections(newDetections, 1.1);
+			//std::cerr << "size of new det: " << newDetections.size() << std::endl;
+			newDetections = refineDetections(newDetections, 1.5);
 		}
 		//std::cerr << "refine\n";
 		// Combine detections
@@ -439,8 +439,10 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 				result.push_back({ det, res.second, 0 });
 			}
 		}
-		if (refine)
+		if (refine){
+			rawRois = result;
 			result = refineDetections(result, 1.1);
+		}
 
 	}
 
@@ -498,6 +500,9 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::refineDetections(std::vecto
 	
 	//std::cerr << "Frame # " << this->counter_ << std::endl;
 
+	cv::Mat tmp;
+	cropped_.copyTo(tmp);
+
 	std::vector<DetectionInfo> refined_rois;
 	for (const auto& r : rois){
 	
@@ -525,8 +530,8 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::refineDetections(std::vecto
 		cv::Mat patch = cropped_(cv::Rect(new_x,new_y,new_width, new_height));
 		//imshow("Patch", patch);
 		//std::cerr << "# " << counter_ << std::endl;
-		//std::vector<cv::Rect> det = pCascadeDetector->detectNoGrouping(patch, 1.02, r.roi.size(), patch.size());
-		std::vector<cv::Rect> det = pCascadeDetector->detect(patch, 1.01, r.roi.size(), patch.size());
+		//std::vector<cv::Rect> det = pCascadeDetector->detectNoGrouping(patch, 1.01, params_.cascadeMinWin, patch.size());
+		std::vector<cv::Rect> det = pCascadeDetector->detect(patch, 1.01, params_.cascadeMinWin, patch.size());
 
 		//std::cerr << "Size of det: " << det.size() << std::endl;
 
@@ -552,13 +557,21 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::refineDetections(std::vecto
 				best_it = it;
 			}
 		}
-		if (max_conf > 0)
-			refined_rois.push_back(*best_it);
+
+		//debug
 		
+		cv::rectangle(tmp, r.roi, cv::Scalar(255, 0, 0), 2);
+
+		if (max_conf > 0){
+			cv::rectangle(tmp, best_it->roi, cv::Scalar(0, 255, 0), 2);
+			refined_rois.push_back(*best_it);
+		}
+		
+	
 		//refined_rois = result; //DEBUG
 	}
 	//std::cerr << "size of ref. " << refined_rois.size() << std::endl;
-
+	cv::imshow("Refinement", tmp);
 	
 	
 
@@ -572,8 +585,10 @@ ObjDetector::DetectionInfo ObjDetector::refineDetection(cv::Rect roi , float sca
 	//std::cerr << "Frame # " << this->counter_ << std::endl;
 
 	DetectionInfo refined_roi;
-	
 
+	cv::Mat tmp;
+	cropped_.copyTo(tmp);
+	cv::rectangle(tmp, roi, cv::Scalar(255, 0, 0), 2);
 		//std::cerr << r.roi << std::endl;
 
 		int horSpan = floor(roi.width / 2 * scale);
@@ -596,10 +611,10 @@ ObjDetector::DetectionInfo ObjDetector::refineDetection(cv::Rect roi , float sca
 		}
 
 		cv::Mat patch = cropped_(cv::Rect(new_x, new_y, new_width, new_height));
-		cv::imshow("Patch", patch);
+		//cv::imshow("Patch", patch);
 		//std::cerr << "# " << counter_ << std::endl;
-		//std::vector<cv::Rect> det = pCascadeDetector->detectNoGrouping(patch, 1.02, r.roi.size(), patch.size());
-		std::vector<cv::Rect> det = pCascadeDetector->detect(patch, 1.01, roi.size(), patch.size());
+		//std::vector<cv::Rect> det = pCascadeDetector->detectNoGrouping(patch, 1.01, params_.cascadeMinWin, patch.size());
+		std::vector<cv::Rect> det = pCascadeDetector->detect(patch, 1.01, params_.cascadeMinWin, patch.size());
 
 		//std::cerr << "Size of det: " << det.size() << std::endl;
 
@@ -625,12 +640,14 @@ ObjDetector::DetectionInfo ObjDetector::refineDetection(cv::Rect roi , float sca
 				best_it = it;
 			}
 		}
-		if (max_conf > 0)
+		if (max_conf > 0){
 			refined_roi = { best_it->roi, max_conf, 0 };
+			cv::rectangle(tmp, best_it->roi, cv::Scalar(0, 255, 0), 2);
+		}
 		else
 			refined_roi = { roi, -1, 0 }; 
 		//refined_rois = result; //DEBUG
-	
+		cv::imshow("Single ref", tmp);
 	//std::cerr << "size of ref. " << refined_rois.size() << std::endl;
 	return refined_roi;
 
