@@ -11,7 +11,7 @@ SVMFile: "exit_sign_model.svm"       # SVM model
 minWinSize:
     width: 24
     height: 18
-CascadeScaleFactor: 1.2    # scale factor for multiscale detection 
+CascadeScaleFactor: 1.5    # scale factor for multiscale detection 
 
 maxWinSizeFactor: 10.       #specify largest search window as a multiple of minWinSize
 
@@ -24,7 +24,7 @@ SVMThreshold: .5          # sets the SVM confidence threshold
 
 # Preprocessing
 CroppingFactors:           # specify which section of the image to process. Cropping origin is (0,0) i.e. top left corner
-    width: 1.0
-    height: 0.66
+    width: 1.
+    height: 1.
 
 ScaleFactor: 1.          # specify rescaling factor for cropped frames (helps with detection of small objects)
