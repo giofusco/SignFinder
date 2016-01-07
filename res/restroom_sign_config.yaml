@@ -10,15 +10,15 @@ SVMFile2: "restroom_binary_model.svm"       # SVM model (stage 3)
 
 
 #tags associated with 3rd stage output
-posLabel: "M"
-negLabel: "W"
+posLabel: "MEN"
+negLabel: "WOM"
 
 
 # Cascade search window parameters. It can be changed, but it is a good idea to keep the same aspect ratio 
 minWinSize:
     width: 12
     height: 32
-CascadeScaleFactor: 1.5    # scale factor for multiscale detection 
+CascadeScaleFactor: 1.2    # scale factor for multiscale detection 
 
 maxWinSizeFactor: 10.       #specify largest search window as a multiple of minWinSize
 
@@ -32,7 +32,7 @@ SVMThreshold: .5          # sets the SVM confidence threshold
 # Preprocessing
 CroppingFactors:           # specify which section of the image to process. Cropping origin is (0,0) i.e. top left corner
     width: 1.
-    height: .8
+    height: 1.
 
 ScaleFactor: 1.          # specify rescaling factor for cropped frames (helps with detection of small objects)
 
