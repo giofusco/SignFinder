@@ -45,7 +45,8 @@ public:
     std::string classifiersFolder;  ///< base directory containing the Adaboost and the SVM classifier
     std::string configFileName;     ///< full path to the configuration file
     std::string cascadeFile;        ///< Adaboost cascade classifier filename
-    std::string svmModelFile;       ///< SVM model filename
+    std::string svmModelFile;       ///< SVM model filename for second stage
+	std::string svmModelFile2;       ///< SVM model filename for third stage
 
     cv::Size hogWinSize;            ///< windows size for HOG descriptor
     cv::Size cascadeMinWin;         ///< min window size for multi-scale detection
@@ -60,12 +61,17 @@ public:
     int maxAgePreConfirmation;  ///< max number of frames object can be missed before being confirmed.
     int maxAgePostConfirmation; ///< max number of frames object a confirmed object can be missed without declaring lost.
     int nHangOverFrames;        ///< number of hangover frames during which detection must be confirmed
+	
+	inline bool useThreeStages() { return use3Stages_; }
+	std::vector < std::string > labels;
 
 private:
 	bool init_;					///< specifies if the parameters have been initialized or not
-
+	bool use3Stages_;			///< specifies whether to use an additional verification step 
 	void fixPathString(std::string& instring); ///< fix path strings according to the OS
-
+	
+	
+	
 	inline char separator(){
 		#ifdef _WIN32
 			return '\\';

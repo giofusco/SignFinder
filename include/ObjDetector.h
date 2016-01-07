@@ -37,6 +37,8 @@ public:
     {
         cv::Rect roi;           ///< detection location
         double confidence;      ///< detection confidence as estimated by the SVM
+		int iLabel;				///< label (-1, 1 if 3 stages, 0 otherwise) associated to the ROI
+		std::string sLabel;		///< string associated to the label
     };
 
     /// Default constructor. The parameters are not initialized.
@@ -90,7 +92,8 @@ public:
     /// @param[in] prefix prefix of the file names to use hen saving second stage results.G
     void dumpStage2(std::string prefix);
 	
-    cv::Mat currFrame; ///< last processed frame
+    cv::Mat currFrame; ///< last processed frame 
+	std::vector<DetectionInfo> rawRois;        //< raw detections (used for debugging of refinement)
 
 private:
 
@@ -98,14 +101,19 @@ private:
 
 	void init() throw (std::runtime_error);	///< initializes the classifiers
 
+	std::vector<DetectionInfo> refineDetections(std::vector<DetectionInfo> rois, float scale);
+	DetectionInfo refineDetection(cv::Rect roi, float scale);
+
 	bool init_;
 
     class CascadeDetector;  //< first stage detector, LBP + Adaboost cascade
     class SVMClassifier;      //< second stage detector, HoG + SVM
     std::unique_ptr<CascadeDetector> pCascadeDetector;  //< ptr to first stage detector
     std::unique_ptr<SVMClassifier> pSVMClassifier;      //< ptr to second stage detector
+	std::unique_ptr<SVMClassifier> pSVMClassifier2;      //< ptr to third stage detector 
     
     DetectionParams params_;
+	cv::Mat cropped_;
     
     struct TrackingInfo
     {
@@ -117,6 +125,7 @@ private:
     
     cv::Mat prevFrame_;
     
+	
     std::vector<cv::Rect> rois_;        //< first stage outputs
     std::vector<TrackingInfo> secondStageOutputs_;  //< second stage outputs, objects that are potentially being tracked
 
