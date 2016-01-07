@@ -250,13 +250,13 @@ void ObjDetector::init() throw(std::runtime_error)
 * @return a vector of DetectionInfo containing information about the detections and the frame rate
 * @exception runtime_error if the detector is not properly initialized
 */
-std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, double& FPS, bool doTrack, bool refine) throw (std::runtime_error)
+std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, double& FPS, bool doTrack) throw (std::runtime_error)
 {
 	//measure delta_T
 	time_t end;
 	if (counter_ == 0)
 		time(&start_);
-	auto result = detect(frame, doTrack, refine);
+	auto result = detect(frame, doTrack);
 	time(&end);
 	counter_++;
 	double sec = difftime(end, start_);
@@ -271,7 +271,7 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, doub
 * @exception runtime_error if the detector is not properly initialized
 * @TODO: bring out the refinement step parameter
 */
-std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool doTrack, bool refine) throw (std::runtime_error)
+std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool doTrack) throw (std::runtime_error)
 {
 	if (!params_.isInit())
 	{
@@ -314,19 +314,8 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 				it->confidence = res.second;
 				if ((1 == res.first) && (res.second > params_.SVMThreshold)) //svm confirms detection
 				{
-					//did the patch pass the SVM test? Then refine it. 
-					if (refine){
-						DetectionInfo refRoi = refineDetection(it->roi, 1.5);
-						//std::c err << "Conf: " << refRoi.confidence << std::endl;
-						if (refRoi.confidence > 0){
-							it->age = 0;
-							it->confidence = refRoi.confidence;
-							it->roi = refRoi.roi;
-						}
-						else{
-							++it->age;   //increase age
-						}
-					}
+					
+					it->age = 0;
 				}
 				else    //svm did not classify patch as foreground
 				{
@@ -348,12 +337,6 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 			}
 		}
 		
-		//std::cerr << "before refine\n";
-		if (refine){
-			//std::cerr << "size of new det: " << newDetections.size() << std::endl;
-			newDetections = refineDetections(newDetections, 1.5);
-		}
-		//std::cerr << "refine\n";
 		// Combine detections
 		auto overlaps = [](const cv::Rect& r1, const cv::Rect& r2){return ((r1 & r2).area() > .5 * std::min(r1.area(), r2.area())); };   //two rectangles overlap if their intersection is greater than half the smaller
 		
@@ -439,11 +422,6 @@ std::vector<ObjDetector::DetectionInfo> ObjDetector::detect(cv::Mat& frame, bool
 				result.push_back({ det, res.second, 0 });
 			}
 		}
-		if (refine){
-			rawRois = result;
-			result = refineDetections(result, 1.1);
-		}
-
 	}
 
 	
