@@ -1,6 +1,5 @@
 # README #
 
-Note: For Windows installation instructions, also see "doc/Instructions_Wicab Sign Finder.pdf" These are somewhat outdated, and we suggest you follow the instructions here.
 
 Dependencies
 =============

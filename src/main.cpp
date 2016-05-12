@@ -34,12 +34,12 @@ namespace
 	struct Options
 	{
 		std::string configFile;         //< The configuration file in YAML format
-		std::string input;              // input file stream to process
-		std::string output;             // name of output file if one is given
-		std::string patchPrefix;        // if non-empty, dump patches to disk with this prefix
-		std::string roisFile;			// if non-empty, saves detection ROIs to the specified file
-		std::string label;				// label for the ROIs
-		int maxDim;                     // maximum dimension of the image in pixels
+		std::string input;              //< input file stream to process
+		std::string output;             //< name of output file if one is given
+		std::string patchPrefix;        //< if non-empty, dump patches to disk with this prefix
+		std::string roisFile;			//< if non-empty, saves detection ROIs to the specified file
+		std::string label;				//< label for the ROIs
+		int maxDim;                     //< maximum dimension of the image in pixels
 		bool isFlipped;					//< flip input image if true (used for landscape videos)
 		bool isTransposed;				//< transpose input image if true (used for landscape videos)
 		bool doShowIntermediate;        //< show debugging info
@@ -257,7 +257,7 @@ int main(int argc, char* argv[])
 			putText(detector.currFrame, "FPS: " + std::to_string(fps), cv::Point(100, detector.currFrame.size().height - 100), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_BLUE);
 			if (options.doShowIntermediate)
 			{
-				//plot amd write confidence and size of stage 1
+				//plot and write confidence and size of stage 1
 				auto rois1 = detector.getStage1Rois();
 				for (const auto& res : rois1)
 				{
@@ -265,7 +265,7 @@ int main(int argc, char* argv[])
 					putText(detector.currFrame, to_string(res.size()), res.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, COLOR_CASCADE_DETECTION);
 				}
 
-				//plot amd write confidence and size of stage 2
+				//plot and write confidence and size of stage 2
 				auto rois2 = detector.getStage2Rois();
 				for (const auto& res : rois2)
 				{
